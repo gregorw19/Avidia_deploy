@@ -1,0 +1,340 @@
+{% extends "pct/base_profile.html" %}
+{% load tz %}
+
+{% block content %}
+<div class="schedule-page">
+  <section class="schedule-hero">
+    <div class="hero-text">
+      <p class="eyebrow">Weekly schedule</p>
+      <h1>Week of {{ schedule_week.week_start|date:"M j, Y" }}</h1>
+      <p class="page-sub">Set your availability, view released shifts, and request swaps.</p>
+      <div class="hero-stats">
+        <div class="stat">
+          <p class="muted">Shifts</p>
+          <strong>{{ my_shifts|length }}</strong>
+          <span class="stat-foot">assigned to you</span>
+        </div>
+        <div class="stat">
+          <p class="muted">Availability</p>
+          <strong>{{ my_availabilities|length }}</strong>
+          <span class="stat-foot">slots this week</span>
+        </div>
+        <div class="stat stat--status">
+          <p class="muted">Schedule</p>
+          <span class="status-chip {% if schedule_week.is_published %}status-chip--published{% else %}status-chip--draft{% endif %}">
+            {{ schedule_week.get_status_display }}
+          </span>
+          <span class="stat-foot">Updated {{ schedule_week.updated_at|date:"M j, g:i A" }}</span>
+        </div>
+      </div>
+      {% if user.is_authenticated and user.profile %}
+        {% if user.profile.role == 'staff' or user.profile.role == 'admin' %}
+        <div class="hero-actions">
+          <a class="btn-primary" href="{% url 'schedule-builder' %}?week_start={{ schedule_week.week_start }}">Open schedule builder</a>
+          <p class="muted small">Add shifts, assign team members, and publish the schedule.</p>
+        </div>
+        {% endif %}
+      {% endif %}
+    </div>
+    <form method="get" class="week-picker">
+      <div class="week-picker__field">
+        <label for="week_start">Week starting</label>
+        <input type="date" id="week_start" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}" placeholder="YYYY-MM-DD" class="form-input">
+      </div>
+      <p class="muted small">Pick any Monday to jump to a different week.</p>
+      <button type="submit" class="btn-primary">View week</button>
+    </form>
+  </section>
+
+  <div class="schedule-grid">
+    <section class="card availability-card">
+      <header class="card__header">
+        <div>
+          <p class="section-kicker">Availability</p>
+          <h2>Share when you can work</h2>
+          <p class="muted">Add single-day slots for this week ({{ schedule_week.week_start|date:"D, M j" }} &ndash; {{ week_end_date|date:"D, M j" }}). Pick a date, start time, and end time, then add as many slots as you need.</p>
+        </div>
+        <span class="status-chip {% if schedule_week.is_published %}status-chip--published{% else %}status-chip--draft{% endif %}">
+          {{ schedule_week.get_status_display }}
+        </span>
+      </header>
+      <div class="availability-layout">
+        <form method="post" class="form-grid availability-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save_availability">
+          {% include "pct/partials/form_field.html" with field=availability_form.day %}
+          {% include "pct/partials/form_field.html" with field=availability_form.start_time %}
+          {% include "pct/partials/form_field.html" with field=availability_form.end_time %}
+          {% include "pct/partials/form_field.html" with field=availability_form.note %}
+          {% include "pct/partials/form_field.html" with field=availability_form.skills %}
+          {% if schedule_week and active_semester %}
+          <div class="form-field">
+            <label class="checkbox">
+              <input type="checkbox" name="apply_semester" value="1">
+              <span>Apply this availability to every week for the rest of the active semester (skips holidays and closed hours).</span>
+            </label>
+          </div>
+          {% elif schedule_week %}
+          <p class="muted small">Set an active semester to copy availability across weeks.</p>
+          {% endif %}
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Add availability</button>
+            <button type="button" class="btn-secondary" onclick="this.form.reset(); return true;">Add another slot</button>
+            <p class="muted small">Need a different week? Change it above and the form limits will update.</p>
+          </div>
+        </form>
+        <div class="availability-panel">
+          <p class="panel-title">Your slots this week</p>
+          {% if my_availabilities %}
+          <ul class="availability-list">
+            {% for slot in my_availabilities %}
+            <li class="availability-item">
+              <span class="dot"></span>
+              <div>
+                <p class="availability-range">{{ slot.start|date:"D, M j g:i A" }} &ndash; {{ slot.end|date:"g:i A" }}</p>
+                {% if slot.note %}<p class="muted">{{ slot.note }}</p>{% endif %}
+                {% if slot.skills.all|length %}
+                  <p class="muted">
+                  {% for skill in slot.skills.all %}
+                    <span class="badge">{{ skill.name }}</span>
+                  {% endfor %}
+                  </p>
+                {% endif %}
+                <details class="inline-details">
+                  <summary class="btn-tertiary">Edit / Delete</summary>
+                  <form method="post" class="inline-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_availability">
+                    <input type="hidden" name="availability_id" value="{{ slot.id }}">
+                    <input type="hidden" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+                    <label>Date <input type="date" name="day" value="{{ slot.start|date:'Y-m-d' }}" placeholder="YYYY-MM-DD" class="form-input"></label>
+                    <label>Start time <input type="time" name="start_time" value="{{ slot.start|date:'H:i' }}" class="form-input"></label>
+                    <label>End time <input type="time" name="end_time" value="{{ slot.end|date:'H:i' }}" class="form-input"></label>
+                    <label>Note <input type="text" name="note" value="{{ slot.note }}" class="form-input"></label>
+                    <label>Skills
+                      <select name="skills" multiple class="form-input">
+                        {% for choice in skill_choices %}
+                          <option value="{{ choice.id }}" {% if choice in slot.skills.all %}selected{% endif %}>{{ choice.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </label>
+                    <button type="submit" class="btn-primary">Save</button>
+                  </form>
+                  <form method="post" class="inline-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_availability">
+                    <input type="hidden" name="availability_id" value="{{ slot.id }}">
+                    <input type="hidden" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+                    <button type="submit" class="btn-tertiary" onclick="return confirm('Delete this availability?');">Delete</button>
+                  </form>
+                </details>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+            <p class="muted">No availability submitted for this week yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card assignments-card">
+      <header class="card__header">
+        <div>
+          <p class="section-kicker">Assignments</p>
+          <h2>Your shifts</h2>
+        </div>
+      </header>
+      {% if my_shifts or my_trainings %}
+      <div class="shift-list">
+        {% for shift in my_shifts %}
+        <article class="shift-card">
+          <div class="shift-card__meta">
+            <span class="badge">{{ shift.location }}</span>
+            {% if shift.is_published %}<span class="badge badge--success">Published</span>{% else %}<span class="badge">Draft</span>{% endif %}
+          </div>
+          <h3 class="shift-card__title">{{ shift.title }}</h3>
+          <p class="shift-card__note">{{ shift.start|date:"D, M j g:i A" }} &ndash; {{ shift.end|date:"g:i A" }}</p>
+          {% if shift.notes %}<p class="shift-card__note">{{ shift.notes }}</p>{% endif %}
+          <form method="post" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="request_swap">
+            <input type="hidden" name="shift_id" value="{{ shift.id }}">
+            <input type="hidden" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+            {% include "pct/partials/form_field.html" with field=swap_form.proposed_to %}
+            {% include "pct/partials/form_field.html" with field=swap_form.reason %}
+            <label class="checkbox">
+              {{ swap_form.is_give_up }} <span>Give up this shift (no partner)</span>
+            </label>
+            <button type="submit" class="btn-secondary">Request swap</button>
+          </form>
+        </article>
+        {% endfor %}
+        {% for training in my_trainings %}
+        <article class="shift-card shift-card--training">
+          <div class="shift-card__meta">
+            <span class="badge">Training</span>
+            {% if training.certification_type %}<span class="badge">{{ training.certification_type.name }}</span>{% endif %}
+            <span class="badge">{{ training.level }}</span>
+          </div>
+          <h3 class="shift-card__title">{{ training.name }}</h3>
+          <p class="shift-card__note">
+            {% if training.time %}
+              {{ training.time|date:"D, M j g:i A" }}
+            {% else %}
+              Time TBD
+            {% endif %}
+            {% if training.machine %}&bull; {{ training.machine }}{% endif %}
+          </p>
+          <p class="shift-card__note">Student: {% if training.student %}{{ training.student.get_full_name }}{% else %}Unassigned{% endif %}</p>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+        {% if not schedule_week.is_published %}
+          <p class="muted">The schedule is still in draft. Once staff publishes, your shifts and trainings will appear here.</p>
+        {% else %}
+          <p class="muted">No shifts or trainings assigned for this week yet.</p>
+        {% endif %}
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="card">
+    <header class="card__header">
+      <div>
+        <p class="section-kicker">Requests</p>
+        <h2>Swap history</h2>
+      </div>
+    </header>
+    {% if my_swap_requests %}
+      <ul class="request-list">
+        {% for swap in my_swap_requests %}
+        <li class="request-card">
+          <div>
+            <p class="request-title"><strong>{{ swap.shift.title }}</strong> &ndash; {{ swap.get_status_display }}</p>
+            <div class="muted">
+              {{ swap.shift.start|date:"D, M j g:i A" }}
+              {% if swap.proposed_to %}&bull; to {{ swap.proposed_to.get_full_name }}{% endif %}
+              {% if swap.is_give_up %}&bull; Give up{% endif %}
+            </div>
+            <div class="muted">Submitted {{ swap.created_at|date:"M j, g:i A" }}</div>
+            {% if swap.response_note %}<div class="muted">Staff note: {{ swap.response_note }}</div>{% endif %}
+          </div>
+          {% if swap.status == 'pending' %}
+          <form method="post" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="cancel_swap">
+            <input type="hidden" name="swap_id" value="{{ swap.id }}">
+            <input type="hidden" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+            <button type="submit" class="btn-tertiary">Cancel request</button>
+          </form>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No swap requests yet.</p>
+    {% endif %}
+  </section>
+</div>
+
+<style>
+.schedule-page { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; padding-bottom: 1rem; color-scheme: dark;
+  --surface: #0c1220;
+  --surface-soft: #0b1020;
+  --surface-hero: linear-gradient(120deg, #0e1b34, #0c1528 55%, #0b1d33);
+  --border: #1c263f;
+  --muted: #8fa0c4;
+}
+.schedule-hero { position: relative; overflow: hidden; background: var(--surface-hero); border: 1px solid #1f2b45; border-radius: 18px; padding: 1.5rem; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 1.25rem; align-items: center; box-shadow: 0 16px 42px rgba(5, 12, 30, 0.45); }
+.schedule-hero::after { content: ""; position: absolute; inset: 0; background: radial-gradient(80% 60% at 110% 20%, rgba(94, 231, 193, 0.12), transparent), radial-gradient(60% 60% at -5% 80%, rgba(255, 214, 102, 0.08), transparent); pointer-events: none; }
+.hero-text { position: relative; z-index: 1; }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.09em; color: #7fb4ff; margin: 0 0 0.25rem; font-weight: 700; font-size: 0.85rem; }
+.hero-text h1 { margin: 0; color: #f4f7ff; font-size: 1.8rem; }
+.page-sub { color: #c1c9e7; margin: 0.35rem 0 0; max-width: 60ch; }
+.hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+.stat { background: rgba(255, 255, 255, 0.03); border: 1px solid #24304f; border-radius: 12px; padding: 0.75rem 0.85rem; display: grid; gap: 0.2rem; }
+.stat strong { font-size: 1.25rem; color: #f4f7ff; }
+.stat-foot { color: #8fa0c4; font-size: 0.95rem; }
+.stat--status { align-content: center; }
+.hero-actions { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-start; }
+.week-picker { position: relative; z-index: 1; background: rgba(10, 14, 28, 0.82); border: 1px solid #24304f; border-radius: 12px; padding: 1rem; display: grid; gap: 0.75rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); }
+.week-picker__field label { color: #cfd6f4; font-weight: 600; display: block; margin-bottom: 0.25rem; }
+.week-picker input { background: #0b1221; color: #f4f7ff; border: 1px solid #2d3a5c; padding: 0.55rem 0.65rem; border-radius: 10px; width: 100%; }
+.week-picker .small { margin: 0; }
+.schedule-page input[type="date"],
+.schedule-page input[type="time"],
+.schedule-page input[type="text"],
+.schedule-page select {
+  background: #0b1221;
+  color: #f4f7ff;
+  border: 1px solid #2d3a5c;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  width: 100%;
+  appearance: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.schedule-page input[type="date"]::-webkit-calendar-picker-indicator,
+.schedule-page input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.4);
+}
+.schedule-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr); gap: 1.1rem; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28); }
+.card__header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
+.section-kicker { text-transform: uppercase; letter-spacing: 0.08em; color: #8ca3d6; margin: 0; font-weight: 700; font-size: 0.85rem; }
+.card h2 { margin: 0.15rem 0; color: #f2f4ff; }
+.form-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; }
+.form-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; grid-column: 1 / -1; }
+.form-actions .small { margin: 0; }
+.checkbox { display: flex; gap: 0.5rem; align-items: flex-start; color: #cfd6f4; }
+.muted { color: var(--muted); }
+.small { font-size: 0.92rem; }
+.status-chip { padding: 0.35rem 0.75rem; border-radius: 10px; font-weight: 700; background: rgba(255, 193, 7, 0.18); color: #f5c84c; border: 1px solid rgba(255, 193, 7, 0.25); }
+.status-chip--published { background: rgba(66, 185, 131, 0.18); color: #75d6a3; border-color: rgba(66, 185, 131, 0.25); }
+.status-chip--draft { background: rgba(255, 193, 7, 0.18); color: #f5c84c; border-color: rgba(255, 193, 7, 0.25); }
+.availability-layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 1rem; align-items: start; }
+.availability-panel { background: var(--surface-soft); border: 1px dashed #263453; border-radius: 12px; padding: 1rem; }
+.panel-title { margin: 0 0 0.5rem; font-weight: 700; color: #f2f4ff; }
+.availability-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.availability-item { display: flex; gap: 0.75rem; padding: 0.35rem 0.25rem; border-bottom: 1px solid #1b2640; }
+.availability-item:last-child { border-bottom: none; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #5ee7c1; margin-top: 0.45rem; box-shadow: 0 0 0 6px rgba(94, 231, 193, 0.08); flex-shrink: 0; }
+.availability-range { margin: 0 0 0.1rem; font-weight: 700; color: #f3f6ff; }
+.inline-details { margin-top: 0.35rem; }
+.inline-details summary { list-style: none; cursor: pointer; display: inline-block; }
+.inline-details summary::-webkit-details-marker { display: none; }
+.shift-list { display: flex; flex-direction: column; gap: 1rem; }
+.shift-card { background: #0b1020; border: 1px solid #1f2a45; border-radius: 12px; padding: 1rem; display: grid; gap: 0.5rem; }
+.shift-card__meta { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.shift-card__title { margin: 0; color: #f2f4ff; font-size: 1.1rem; }
+.shift-card__note { margin: 0; color: #8fa0c4; }
+.badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; background: #1c2335; color: #dbe4ff; font-size: 0.85rem; }
+.badge--success { background: rgba(66, 185, 131, 0.18); color: #75d6a3; }
+.inline-form { display: grid; gap: 0.5rem; margin-top: 0.35rem; padding: 0.65rem; background: var(--surface-soft); border: 1px solid var(--border); border-radius: 10px; }
+.inline-form label { display: flex; flex-direction: column; gap: 0.2rem; color: #cfd6f4; font-weight: 600; }
+.inline-form input,
+.inline-form select { background: #0b1221; color: #f4f7ff; border: 1px solid #2d3a5c; padding: 0.55rem 0.65rem; border-radius: 10px; width: 100%; }
+.inline-form .muted.small { margin: 0; }
+.btn-tertiary { background: transparent; border: 1px solid #3a425c; color: #dbe4ff; border-radius: 8px; padding: 0.45rem 0.85rem; cursor: pointer; }
+.request-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.85rem; }
+.request-card { display: flex; justify-content: space-between; gap: 1rem; align-items: center; background: var(--surface-soft); border: 1px solid #1f2a45; border-radius: 12px; padding: 0.9rem; }
+.request-title { margin: 0; color: #f3f6ff; }
+@media (max-width: 980px) {
+  .schedule-hero { grid-template-columns: 1fr; }
+  .schedule-grid { grid-template-columns: 1fr; }
+  .availability-layout { grid-template-columns: 1fr; }
+  .request-card { flex-direction: column; align-items: flex-start; }
+}
+.availability-form .form-field:nth-of-type(5) .form-input {
+  max-width: 360px;
+}
+.availability-form textarea.form-input {
+  min-height: 2.6rem;
+  max-height: 3.6rem;
+  resize: vertical;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% extends 'pct/base.html' %}
+{% load static %}
+{% block body_class %} calendar-page{% endblock %}
+
+{% block nav %}
+    {% include 'pct/partials/navbar.html' %}
+{% endblock %}
+
+{% block header %}
+<div>My Calendar</div>
+{% endblock %}
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+
+<input type="hidden" id="csrf_token" value="{{ csrf_token }}">
+<input type="hidden" id="staff_view" value="{{ staff_view|yesno:"1,0" }}">
+<input type="hidden" id="is_staff_member" value="{{ is_staff_member|yesno:"1,0" }}">
+
+<div class="calendar-controls">
+  <div class="calendar-legend">
+    <span class="legend-item"><span class="legend-dot legend-dot--workblock"></span>Personal Block</span>
+    <span class="legend-item"><span class="legend-dot legend-dot--training-open"></span>Training (Open)</span>
+    <span class="legend-item"><span class="legend-dot legend-dot--training-booked"></span>Training (Booked)</span>
+  </div>
+  {% if is_staff_member %}
+  <label class="training-toggle">
+    <input type="checkbox" id="staff-training-toggle">
+    Show only trainings I'm leading
+  </label>
+  {% endif %}
+</div>
+<div id="calendar"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  const csrfToken = document.getElementById('csrf_token').value;
+  const staffView = document.getElementById('staff_view').value === "1";
+  const isStaffMember = document.getElementById('is_staff_member').value === "1";
+  const staffToggle = document.getElementById('staff-training-toggle');
+
+  const calendarEl = document.getElementById('calendar');
+
+  const isEditableEvent = (event) => {
+    return event.extendedProps && event.extendedProps.eventType === 'workblock';
+  };
+
+  const showTrainingDetails = (event) => {
+    const props = event.extendedProps || {};
+    const machine = props.machine ? `Machine: ${props.machine}` : null;
+    const level = props.level ? `Level ${props.level}` : null;
+    const staff = props.staff ? `Instructor: ${props.staff}` : null;
+    const student = props.student ? `Student: ${props.student}` : 'Open slot';
+    const details = [machine, level, staff, student].filter(Boolean).join('\n');
+    alert(`${event.title}\n${details}`);
+  };
+
+  const buildEventsUrl = () => {
+    const params = new URLSearchParams();
+    if (staffView) params.set('staff_view', '1');
+    if (isStaffMember && staffToggle && staffToggle.checked) {
+      params.set('staff_only', '1');
+    }
+    const query = params.toString();
+    return query ? `/calendar/events/?${query}` : '/calendar/events/';
+  };
+
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    selectable: true,
+    editable: true,  
+    events: function(fetchInfo, successCallback, failureCallback) {
+      fetch(buildEventsUrl())
+        .then(response => response.json())
+        .then(data => successCallback(data))
+        .catch(error => failureCallback(error));
+    },
+
+    // Add new event
+    select: function(info) {
+      const title = prompt("Enter work block title:");
+      if (!title) return;
+
+      const color = prompt("Optional color (hex code, e.g., #ff0000):", "#3788d8");
+
+      fetch('/calendar/events/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+          action: 'add',
+          title: title,
+          start: info.startStr,
+          end: info.endStr,
+          color: color
+        })
+      }).then(res => res.json()).then(data => {
+        if(data.status==='success') calendar.refetchEvents();
+        else alert("Error adding event!");
+      });
+
+      calendar.unselect();
+    },
+
+    // Click event to edit/delete
+    eventClick: function(info) {
+      if(!isEditableEvent(info.event)) {
+        showTrainingDetails(info.event);
+        return;
+      }
+
+      const action = prompt("Edit title or type 'delete' to remove:", info.event.title);
+      if(action===null) return;
+
+      if(action.toLowerCase()==='delete'){
+        fetch('/calendar/events/', {
+          method: 'POST',
+          headers:{'Content-Type':'application/json','X-CSRFToken': csrfToken},
+          body: JSON.stringify({action:'delete', id: info.event.id})
+        }).then(res=>res.json()).then(data=>{
+          if(data.status==='success') info.event.remove();
+          else alert("Error deleting event!");
+        });
+      } else {
+        fetch('/calendar/events/', {
+          method: 'POST',
+          headers:{'Content-Type':'application/json','X-CSRFToken': csrfToken},
+          body: JSON.stringify({action:'update', id: info.event.id, title: action})
+        }).then(res=>res.json()).then(data=>{
+          if(data.status==='success') info.event.setProp('title', action);
+          else alert("Error updating event!");
+        });
+      }
+    },
+
+    // Drag to move event
+    eventDrop: function(info){
+      if(!isEditableEvent(info.event)) {
+        info.revert();
+        return;
+      }
+      fetch('/calendar/events/', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken': csrfToken},
+        body: JSON.stringify({
+          action:'update',
+          id: info.event.id,
+          start: info.event.start.toISOString(),
+          end: info.event.end ? info.event.end.toISOString() : info.event.start.toISOString()
+        })
+      });
+    },
+
+    // Resizing
+    eventResize: function(info){
+      if(!isEditableEvent(info.event)) {
+        info.revert();
+        return;
+      }
+      fetch('/calendar/events/', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken': csrfToken},
+        body: JSON.stringify({
+          action:'update',
+          id: info.event.id,
+          start: info.event.start.toISOString(),
+          end: info.event.end.toISOString()
+        })
+      });
+    }
+  });
+
+  calendar.render();
+
+  if (staffToggle) {
+    staffToggle.addEventListener('change', () => {
+      calendar.refetchEvents();
+    });
+  }
+});
+</script>
+
+{% endblock %}

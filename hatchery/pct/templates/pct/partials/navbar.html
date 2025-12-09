@@ -1,0 +1,43 @@
+{% if user.is_authenticated %}
+<nav>
+    <div class="nav_objects">
+        <h1><a href="{% url 'home' %}">Hatchery Portal</a></h1>
+        <div class="nav_links">
+            {% if user.profile %}
+                {% with role=user.profile.role %}
+                    {% if role == 'admin' %}
+                        <a href="{% url 'admin_log' %}">Reports</a>
+                        <a href="{% url 'manage_users' %}">Manage Users</a>
+                        <a href="{% url 'schedule' %}">Schedule</a>
+                        <a href="{% url 'profile' %}">Profile</a>
+                        <a href="{% url 'account_logout' %}">Logout</a>
+                    {% else %}
+                        {% if role == 'staff' %}
+                            <a href="{% url 'staff-training-list' %}">Bookings</a>
+                            <a href="{% url 'add_certifications' %}">Add Certification</a>
+                            <a href="{% url 'semester-settings' %}">Semesters</a>
+                            <a href="{% url 'manage_users' %}">Manage Users</a>
+                            <a href="{% url 'schedule-builder' %}">Build Schedule</a>
+                            <a href="{% url 'schedule' %}">Schedule</a>
+                        {% elif role == 'team_member' %}
+                            <a href="{% url 'staff-training-list' %}">Bookings</a>
+                            <a href="{% url 'add_certifications' %}">Add Certification</a>
+                            <a href="{% url 'manage_users' %}">Manage Users</a>
+                            <a href="{% url 'schedule' %}">Schedule</a>
+                        {% else %}
+                        {% endif %}
+                        {% if role == 'student' or not role %}
+                            <a href="{% url 'submit_report' %}">Report</a>
+                        {% endif %}
+                        <a href="{% url 'reservations' %}">Reservations</a>
+                        <a href="{% url 'calendar' %}">Calendar</a>
+                        <a href="{% url 'training-list' %}">Training</a>
+                        <a href="{% url 'profile' %}">Profile</a>
+                        <a href="{% url 'account_logout' %}">Logout</a>
+                    {% endif %}
+                {% endwith %}
+            {% endif %}
+        </div>
+    </div>
+</nav>
+{% endif %}

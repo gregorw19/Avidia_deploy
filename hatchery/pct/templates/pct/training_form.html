@@ -1,0 +1,237 @@
+{% extends "pct/base_profile.html" %}
+
+{% block content %}
+<div class="training-form-page">
+  <div class="training-form-header">
+    <div>
+      <p class="training-form-kicker">Staff Tools</p>
+      <h1>Create Training</h1>
+      <p>Publish a new session, pick the machine, and match it to the right student.</p>
+    </div>
+    <div class="training-form-badges">
+      <span class="training-badge">Live in minutes</span>
+      <span class="training-badge training-badge--ghost">Students see it instantly</span>
+    </div>
+  </div>
+
+  <div class="training-form-layout">
+    <form method="post" class="training-form-card">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="form-alert">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="form-grid">
+        <section class="form-section">
+          <div class="section-header">
+            <span class="section-kicker">Session basics</span>
+            <h2>Schedule details</h2>
+            <p>Tell students what machine they'll be using and when to show up.</p>
+          </div>
+          {% include "pct/partials/form_field.html" with field=form.name %}
+          {% include "pct/partials/form_field.html" with field=form.machine %}
+          {% include "pct/partials/form_field.html" with field=form.certification_type %}
+          <div class="form-grid--two">
+            {% include "pct/partials/form_field.html" with field=form.level %}
+            <div class="form-field{% if form.time_date.errors or form.time_hour.errors or form.time_minute.errors %} has-error{% endif %}">
+              <label>
+                Time
+              </label>
+              <div style="display: flex; gap: 0.75rem; align-items: center; width: calc(100% - 2rem); padding-right: 2rem; margin-right: 0;">
+                <div class="input-shell" style="flex: 2.5; min-width: 150px;">
+                  {{ form.time_date }}
+                </div>
+                <div class="input-shell input-shell--select" style="flex: 1.2; min-width: 100px;">
+                  {{ form.time_hour }}
+                </div>
+                <span style="color: #888; flex-shrink: 0; font-size: 18px; font-weight: 600;">:</span>
+                <div class="input-shell input-shell--select" style="flex: 1.2; min-width: 100px;">
+                  {{ form.time_minute }}
+                </div>
+              </div>
+              {% if form.time_minute.help_text %}
+                <p class="field-help">{{ form.time_minute.help_text }}</p>
+              {% endif %}
+              {% for error in form.time_date.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+              {% for error in form.time_hour.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+              {% for error in form.time_minute.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="section-header">
+            <span class="section-kicker">Participants</span>
+            <h2>Seats & facilitators</h2>
+            <p>Assign yourself or another staff member and optionally reserve a student spot.</p>
+          </div>
+          <div class="form-grid--two">
+            {% include "pct/partials/form_field.html" with field=form.staff %}
+            {% include "pct/partials/form_field.html" with field=form.student %}
+          </div>
+        </section>
+      </div>
+
+      <div class="form-actions">
+        <a href="{% url 'staff-training-list' %}" class="btn-secondary">Cancel</a>
+        <button type="submit" class="btn-primary">Save Training</button>
+      </div>
+    </form>
+
+    <aside class="training-form-aside">
+      <div class="info-card">
+        <h3>Session tips</h3>
+        <ul>
+          <li>Pick a clear name so students know which certification this covers.</li>
+          <li>Leave the student field empty to keep the slot open for signup.</li>
+          <li>Need to update later? Edit from the “My Trainings” page.</li>
+        </ul>
+      </div>
+      <div class="info-card">
+        <h3>You're logged in as</h3>
+        <dl>
+          <dt>Staff lead</dt>
+          <dd>{{ request.user.profile.get_full_name }}</dd>
+          <dt>Email</dt>
+          <dd>{{ request.user.email }}</dd>
+        </dl>
+        <p class="info-card__meta">Students will see this contact information if they have questions.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<style>
+.training-form-page {
+  max-width: 1200px !important;
+  width: 100%;
+}
+
+.training-form-layout {
+  grid-template-columns: minmax(0, 4fr) minmax(220px, 1fr) !important;
+}
+
+.training-form-card {
+  max-width: none !important;
+  width: 100%;
+}
+
+.form-section {
+  min-width: 0;
+  width: 100%;
+}
+
+.form-grid--two {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: 20px;
+  padding-right: 4rem;
+}
+
+.form-section {
+  padding: 24px 32px 24px 32px !important;
+  overflow: visible;
+}
+
+.form-field {
+  margin-bottom: 24px;
+  padding-right: 0;
+}
+
+.form-field:last-child {
+  margin-bottom: 0;
+}
+
+.form-field {
+  margin-bottom: 24px;
+}
+
+.form-field:last-child {
+  margin-bottom: 0;
+}
+
+.training-form-card input[type="date"] {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 16px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.training-form-card input[type="date"]:focus {
+  outline: none;
+}
+
+.training-form-card input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  filter: invert(1) brightness(1.2);
+}
+
+.training-form-card .input-shell:has(input[type="date"]):focus-within {
+  border-color: #5B8CFF;
+  box-shadow: 0 0 0 4px rgba(91, 140, 255, 0.2);
+}
+
+.training-form-card .input-shell {
+  background-color: #2A2D35;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.training-form-card .input-shell:focus-within {
+  border-color: #5B8CFF;
+  box-shadow: 0 0 0 4px rgba(91, 140, 255, 0.2);
+}
+
+.training-form-card .input-shell--select {
+  cursor: pointer;
+}
+
+.training-form-card .input-shell--select select {
+  background: transparent;
+  border: none;
+  color: white;
+  width: 100%;
+  font-size: 16px;
+  padding: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #5B8CFF 50%), linear-gradient(135deg, #5B8CFF 50%, transparent 50%);
+  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  min-height: 20px;
+}
+
+.training-form-card .input-shell--select select option {
+  background-color: #2A2D35;
+  color: white;
+  padding: 8px;
+}
+
+.training-form-card .input-shell--select select:focus {
+  outline: none;
+}
+
+.training-form-card .input-shell--select:hover {
+  border-color: rgba(91, 140, 255, 0.5);
+}
+</style>
+{% endblock %}

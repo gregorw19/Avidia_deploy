@@ -1,0 +1,297 @@
+{% extends "pct/base.html" %}
+{% load static %}
+
+{% block title %}Home | The Hatchery{% endblock %}
+{% block body_class %} home-page{% endblock %}
+{% block main_class %} home-main{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block extra_body %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script>
+(function () {
+  function formatDetails(event) {
+    const props = event.extendedProps || {};
+    const parts = [];
+    if (props.machine) parts.push(`Machine: ${props.machine}`);
+    if (props.level) parts.push(`Level ${props.level}`);
+    if (props.staff) parts.push(`Instructor: ${props.staff}`);
+    if (props.student) parts.push(`Student: ${props.student}`);
+    return parts.join('\n');
+  }
+
+  function bootHomeCalendars() {
+    if (!window.FullCalendar) {
+      return;
+    }
+
+    document.querySelectorAll('.js-home-calendar').forEach(function (calendarEl) {
+      if (calendarEl.dataset.calendarInitialized === '1') {
+        return;
+      }
+
+      const eventsUrl = calendarEl.dataset.eventsUrl;
+      if (!eventsUrl) {
+        return;
+      }
+
+      const height = calendarEl.dataset.calendarHeight || '420px';
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'listWeek',
+        headerToolbar: false,
+        height: height,
+        events: eventsUrl,
+        displayEventTime: true,
+        displayEventEnd: true,
+        selectable: false,
+        editable: false,
+        eventClick: function (info) {
+          const details = formatDetails(info.event);
+          if (details) {
+            alert(`${info.event.title}\n${details}`);
+          } else {
+            alert(info.event.title);
+          }
+        },
+      });
+
+      calendar.render();
+      calendarEl.dataset.calendarInitialized = '1';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', bootHomeCalendars);
+})();
+</script>
+{% endblock %}
+
+{% block nav %}
+  {% include 'pct/partials/navbar.html' %}
+{% endblock %}
+
+{% block header %}
+<div>Welcome to the Hatchery!</div>
+{% endblock %}
+
+{% block content %}
+<div class="home-cards">
+    {% if invited_trainings %}
+        <section class="reservation-group">
+            <header class="reservation-group__header">
+                <h2>Training Invitations</h2>
+                <span class="reservation-group__see-all">Claim your spot</span>
+            </header>
+            <div class="reservation-group__cards invite-cards">
+                {% for entry in invited_trainings %}
+                    <article class="reservation-card reservation-card--invite">
+                        <p class="reservation-card__date">
+                            {% if entry.training.time %}
+                                {{ entry.training.time|date:"l, F j, Y" }} at {{ entry.training.time|date:"g:i A" }}
+                            {% else %}
+                                Schedule TBD
+                            {% endif %}
+                        </p>
+                        <p class="reservation-card__title">{{ entry.training.name }}</p>
+                        <p class="reservation-card__meta">Machine: {{ entry.training.machine }}</p>
+                        <p class="reservation-card__meta">Level {{ entry.training.level.level }}</p>
+                        <form method="post" action="{% url 'respond_invitation' entry.id %}" class="invite-actions">
+                            {% csrf_token %}
+                            <button name="response" value="accept" class="btn-primary">Accept</button>
+                            <button name="response" value="decline" class="btn-primary btn-danger">Decline</button>
+                        </form>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="reservation-group">
+        <header class="reservation-group__header">
+            <h2>Upcoming Room Reservations</h2>
+            <a class="reservation-group__see-all" href="{% url 'reservations' %}">Manage Reservations</a>
+        </header>
+        <div class="reservation-group__cards room-reservation-cards">
+            {% if upcoming_room_reservations %}
+                {% for request in upcoming_room_reservations %}
+                    <article class="room-reservation-card">
+                        <div class="room-reservation-card__header">
+                            <p class="reservation-card__title">{{ request.get_room_display }}</p>
+                            <span class="status-badge status-badge--{{ request.status }}">{{ request.get_status_display }}</span>
+                        </div>
+                        <p class="reservation-card__date">{{ request.start_time|date:"l, F j, Y" }}</p>
+                        <p class="reservation-card__meta">{{ request.start_time|date:"g:i A" }} – {{ request.end_time|date:"g:i A" }}</p>
+                        <p class="reservation-card__meta">Affiliation: {{ request.affiliation }}</p>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p class="reservation-empty">
+                    No upcoming room reservations yet.
+                    <a href="{% url 'reservations' %}">Request a room</a>
+                </p>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="reservation-group">
+        <header class="reservation-group__header">
+            <h2>Upcoming Reservations:</h2>
+            <a class="reservation-group__see-all" href="{% url 'training-list' %}">Book Training</a>
+        </header>
+        <div class="reservation-group__cards">
+            {% if upcoming_trainings %}
+                {% for training in upcoming_trainings %}
+                    <article class="reservation-card reservation-card--upcoming">
+                        <p class="reservation-card__date">
+                            {% if training.time %}
+                                {{ training.time|date:"l, F j, Y" }}
+                            {% else %}
+                                Date TBD
+                            {% endif %}
+                        </p>
+                        <p class="reservation-card__title">{{ training.name }}</p>
+                        <p class="reservation-card__meta">Machine: {{ training.machine }}</p>
+                        <p class="reservation-card__meta">
+                            {% if training.time %}
+                                {{ training.time|date:"g:i A" }}
+                            {% else %}
+                                Time TBD
+                            {% endif %}
+                        </p>
+                        <p class="reservation-card__meta">
+                            Instructor:
+                            {% if training.staff %}
+                                {{ training.staff.get_full_name }}
+                            {% else %}
+                                Assigned Soon
+                            {% endif %}
+                        </p>
+                        <p class="reservation-card__meta">Level {{ training.level.level }}</p>
+                        <div class="reservation-card__actions">
+                          <!-- Cancel Reservation -->
+                          <form method="post" action="{% url 'training-cancel' training.pk %}" onsubmit="return confirm('Cancel your reservation for {{ training.name|escapejs }}?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                          <button type="submit" class="reservation-card__cancel">Cancel Reservation</button>
+                          </form>
+
+                          <!-- Waitlist Button -->
+                          {% if training.is_waitlisted_for_user %}
+                            <p class="reservation-card__meta">On waitlist ({{ training.waitlist_status_for_user|default:"waiting"|capfirst }})</p>
+                            <form method="post" action="{% url 'leave_waitlist' training.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-warning">Leave Waitlist</button>
+                            </form>
+                          {% elif training.is_full_for_display %}
+                            <form method="post" action="{% url 'join_waitlist' training.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-warning">Join Waitlist</button>
+                            </form>
+                          {% endif %}
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p class="reservation-empty">
+                    No upcoming reservations yet. 
+                    <a href="{% url 'training-list' %}">Book a time</a>
+
+                </p>
+            {% endif %}
+        </div>
+    </section>
+    
+
+    <section class="reservation-group">
+        <header class="reservation-group__header">
+            <h2>Past Reservations:</h2>
+            <a class="reservation-group__see-all" href="{% url 'staff-training-list' %}">Manage</a>
+        </header>
+        <div class="reservation-group__cards">
+            {% if past_trainings %}
+                {% for training in past_trainings %}
+                    <article class="reservation-card">
+                        <p class="reservation-card__date">
+                            {% if training.time %}
+                                {{ training.time|date:"l, F j, Y" }}
+                            {% else %}
+                                Date TBD
+                            {% endif %}
+                        </p>
+                        <p class="reservation-card__title">{{ training.name }}</p>
+                        <p class="reservation-card__meta">Machine: {{ training.machine }}</p>
+                        <p class="reservation-card__meta">
+                            Student:
+                            {% if training.student %}
+                                {{ training.student.get_full_name }}
+                            {% else %}
+                                Slot Open
+                            {% endif %}
+                        </p>
+                        <p class="reservation-card__meta">{{ training.level }}</p>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p class="reservation-empty">No trainings have been completed under your account yet.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    {% url 'events' as events_endpoint %}
+    {% url 'calendar' as calendar_page %}
+    {% include 'pct/partials/home_calendar_card.html' with calendar_id='staff-home-calendar' events_url=events_endpoint|add:'?staff_view=0' calendar_url=calendar_page title='Calendar Overview' link_text='Open Full Calendar' %}
+</div>
+<style>
+    .reservation-group__cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, auto);
+    gap: 20px;
+    max-height: fit-content;
+    overflow: hidden;
+}
+
+.reservation-card:nth-child(n+5) {
+    display: none;
+}
+
+.reservation-empty a {
+    font-style: italic;
+    color: white;
+}
+
+.reservation-group__header a {
+    color: white;
+    text-decoration: underline;
+
+}
+.btn-warning {
+    background-color: #ffc107; 
+    color: #000;              
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800; 
+}
+
+.reservation-card--invite {
+    border: 1px solid #5B8CFF;
+}
+
+.invite-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+</style>
+{% endblock %}

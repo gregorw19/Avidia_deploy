@@ -1,0 +1,337 @@
+{% extends "pct/base_profile.html" %}
+
+{% block content %}
+<div class="schedule-builder">
+  <div class="page-header">
+    <div>
+      <p class="page-kicker">Staff tools</p>
+      <h1>Schedule builder — week of {{ schedule_week.week_start }}</h1>
+      <p class="page-sub">Add shifts, review availability, publish, and handle swap requests.</p>
+    </div>
+    <form method="get" class="week-picker">
+      <label for="week_start">Week starting</label>
+      <input type="date" id="week_start" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+      <button type="submit" class="btn-primary">Go</button>
+    </form>
+  </div>
+
+  <section class="card">
+    <header class="card__header">
+      <div>
+        <p class="section-kicker">Publish</p>
+        <h2>Status: {{ schedule_week.get_status_display }}</h2>
+        <p class="muted">Last updated {{ schedule_week.updated_at }}</p>
+        {% if schedule_week.published_at %}<p class="muted">Published {{ schedule_week.published_at }}</p>{% endif %}
+        </div>
+      <div class="actions">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="{% if schedule_week.is_published %}unpublish{% else %}publish{% endif %}">
+          <input type="hidden" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+          <button type="submit" class="btn-primary">{% if schedule_week.is_published %}Unpublish{% else %}Publish{% endif %}</button>
+        </form>
+      </div>
+    </header>
+  </section>
+
+  <section class="card">
+    <header class="card__header">
+      <div>
+        <p class="section-kicker">Shifts</p>
+        <h2>Create or update</h2>
+        <p class="muted">All staff see live changes. Refresh to pick up the latest edits from other staff.</p>
+      </div>
+    </header>
+    <form method="post" class="form-grid">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_shift">
+      <input type="hidden" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+      {% include "pct/partials/form_field.html" with field=shift_form.title %}
+      {% include "pct/partials/form_field.html" with field=shift_form.location %}
+      {% include "pct/partials/form_field.html" with field=shift_form.start %}
+      {% include "pct/partials/form_field.html" with field=shift_form.end %}
+      {% include "pct/partials/form_field.html" with field=shift_form.min_staffing %}
+      {% include "pct/partials/form_field.html" with field=shift_form.assigned_to %}
+      {% include "pct/partials/form_field.html" with field=shift_form.required_certifications %}
+      {% include "pct/partials/form_field.html" with field=shift_form.notes %}
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Add shift</button>
+      </div>
+    </form>
+    {% if week_shifts %}
+    <div class="list-grid">
+      {% for shift in week_shifts %}
+      <article class="list-card">
+        <div class="list-card__meta">
+          <span class="badge">{{ shift.location }}</span>
+          {% if shift.assigned_to %}<span class="badge badge--success">{{ shift.assigned_to.get_full_name }}</span>{% else %}<span class="badge">Unassigned</span>{% endif %}
+        </div>
+        <h3 class="list-card__title">{{ shift.title }}</h3>
+        <p class="list-card__note">{{ shift.start|date:"D, M j g:i A" }} – {{ shift.end|date:"g:i A" }}</p>
+        <p class="list-card__note">Min staffing: {{ shift.min_staffing }}</p>
+        {% if shift.notes %}<p class="list-card__note">{{ shift.notes }}</p>{% endif %}
+        {% if shift.required_certifications.all|length %}
+        <p class="list-card__note">
+          {% for cert in shift.required_certifications.all %}
+            <span class="badge">{{ cert.name }}</span>
+          {% endfor %}
+        </p>
+        {% endif %}
+        <details class="inline-details">
+          <summary class="btn-tertiary">Edit</summary>
+          <form method="post" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_shift">
+            <input type="hidden" name="shift_id" value="{{ shift.id }}">
+            <input type="hidden" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+            <label>Title <input type="text" name="title" value="{{ shift.title }}"></label>
+            <label>Location
+              <select name="location" class="form-input">
+                {% for value,label in room_choices %}
+                  <option value="{{ value }}" {% if shift.location == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>Start <input type="datetime-local" name="start" value="{{ shift.start|date:'Y-m-d\\TH:i' }}"></label>
+            <label>End <input type="datetime-local" name="end" value="{{ shift.end|date:'Y-m-d\\TH:i' }}"></label>
+            <label>Min staffing <input type="number" name="min_staffing" value="{{ shift.min_staffing }}"></label>
+            <label>Assigned to
+              <select name="assigned_to">
+                <option value="">Unassigned</option>
+                {% for person in assignable_profiles %}
+                  <option value="{{ person.id }}" {% if shift.assigned_to and shift.assigned_to.id == person.id %}selected{% endif %}>
+                    {{ person.get_full_name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>Required certifications
+              <select name="required_certifications" multiple class="form-input">
+                {% for cert in cert_choices %}
+                  <option value="{{ cert.id }}" {% if cert in shift.required_certifications.all %}selected{% endif %}>{{ cert.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>Notes <input type="text" name="notes" value="{{ shift.notes }}"></label>
+            <button type="submit" class="btn-primary">Save changes</button>
+          </form>
+        </details>
+        <form method="post" class="inline-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete_shift">
+          <input type="hidden" name="shift_id" value="{{ shift.id }}">
+          <input type="hidden" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+          <button type="submit" class="btn-tertiary">Delete</button>
+        </form>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="muted">No shifts scheduled for this week.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <header class="card__header">
+      <div>
+        <p class="section-kicker">Trainings</p>
+        <h2>Schedule sessions</h2>
+        <p class="muted">Add trainings for this week with instructors, levels, and optional students.</p>
+      </div>
+    </header>
+    <form method="post" class="form-grid">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_training">
+      {% include "pct/partials/form_field.html" with field=training_form.name %}
+      {% include "pct/partials/form_field.html" with field=training_form.machine %}
+      {% include "pct/partials/form_field.html" with field=training_form.certification_type %}
+      {% include "pct/partials/form_field.html" with field=training_form.level %}
+      {% include "pct/partials/form_field.html" with field=training_form.staff %}
+      {% include "pct/partials/form_field.html" with field=training_form.student %}
+      {% include "pct/partials/form_field.html" with field=training_form.time_date %}
+      {% include "pct/partials/form_field.html" with field=training_form.time_hour %}
+      {% include "pct/partials/form_field.html" with field=training_form.time_minute %}
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Add training</button>
+      </div>
+    </form>
+    {% if week_trainings %}
+    <div class="list-grid">
+      {% for training in week_trainings %}
+      <article class="list-card">
+        <div class="list-card__meta">
+          <span class="badge">{{ training.machine }}</span>
+          <span class="badge">{{ training.level }}</span>
+          {% if training.certification_type %}<span class="badge">{{ training.certification_type.name }}</span>{% endif %}
+        </div>
+        <h3 class="list-card__title">{{ training.name }}</h3>
+        <p class="list-card__note">
+          {% if training.time %}
+            {{ training.time|date:"D, M j g:i A" }}
+          {% else %}
+            Time TBD
+          {% endif %}
+        </p>
+        <p class="list-card__note">
+          Instructor: {% if training.staff %}{{ training.staff.get_full_name }}{% else %}Unassigned{% endif %}
+          {% if training.student %}&bull; Student: {{ training.student.get_full_name }}{% endif %}
+        </p>
+        <form method="post" class="inline-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete_training">
+          <input type="hidden" name="training_id" value="{{ training.id }}">
+          <button type="submit" class="btn-tertiary">Delete</button>
+        </form>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="muted">No trainings scheduled for this week.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <header class="card__header">
+      <div>
+        <p class="section-kicker">Availability</p>
+        <h2>What people submitted</h2>
+      </div>
+    </header>
+    {% if week_availabilities %}
+    <div class="list-grid">
+      {% for slot in week_availabilities %}
+      <article class="list-card">
+        <div class="list-card__meta">
+          <span class="badge">{{ slot.profile.get_full_name }}</span>
+          {% if slot.profile.is_team_lead %}<span class="badge badge--success">Team Lead</span>{% endif %}
+        </div>
+        <p class="list-card__title">{{ slot.start|date:"D, M j g:i A" }} – {{ slot.end|date:"g:i A" }}</p>
+        {% if slot.note %}<p class="list-card__note">{{ slot.note }}</p>{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="muted">No availability submitted yet for this week.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <header class="card__header">
+      <div>
+        <p class="section-kicker">Training cancellation requests</p>
+        <h2>Approve or deny</h2>
+      </div>
+    </header>
+    {% if pending_training_cancellations %}
+      <div class="list-grid">
+        {% for cancel in pending_training_cancellations %}
+        <article class="list-card">
+          <div class="list-card__meta">
+            <span class="badge">{{ cancel.training.name }}</span>
+            {% if cancel.training.staff %}<span class="badge badge--success">Instructor: {{ cancel.training.staff.get_full_name }}</span>{% endif %}
+          </div>
+          <p class="list-card__title">{{ cancel.requester.get_full_name }} wants to cancel</p>
+          {% if cancel.reason %}<p class="list-card__note">{{ cancel.reason }}</p>{% endif %}
+          <p class="list-card__note">
+            {% if cancel.training.time %}
+              {{ cancel.training.time|date:"D, M j g:i A" }}
+            {% else %}
+              Time TBD
+            {% endif %}
+          </p>
+          <div class="inline-actions">
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="approve_training_cancel">
+              <input type="hidden" name="cancel_request_id" value="{{ cancel.id }}">
+              <button type="submit" class="btn-primary">Approve &amp; unassign</button>
+            </form>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="deny_training_cancel">
+              <input type="hidden" name="cancel_request_id" value="{{ cancel.id }}">
+              <button type="submit" class="btn-tertiary">Deny</button>
+            </form>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No pending training cancellation requests.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <header class="card__header">
+      <div>
+        <p class="section-kicker">Swap requests</p>
+        <h2>Approve or deny</h2>
+      </div>
+    </header>
+    {% if pending_swaps %}
+      <div class="list-grid">
+        {% for swap in pending_swaps %}
+        <article class="list-card">
+          <div class="list-card__meta">
+            <span class="badge">{{ swap.shift.title }}</span>
+            {% if swap.proposed_to %}<span class="badge badge--success">To {{ swap.proposed_to.get_full_name }}</span>{% endif %}
+            {% if swap.is_give_up %}<span class="badge">Give up</span>{% endif %}
+          </div>
+          <p class="list-card__title">{{ swap.requester.get_full_name }} requested swap</p>
+          {% if swap.reason %}<p class="list-card__note">{{ swap.reason }}</p>{% endif %}
+          <div class="inline-actions">
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="approve_swap">
+              <input type="hidden" name="swap_id" value="{{ swap.id }}">
+              <input type="hidden" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+              <input type="text" name="response_note" placeholder="Note (optional)" class="text-input">
+              <button type="submit" class="btn-primary">Approve</button>
+            </form>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="deny_swap">
+              <input type="hidden" name="swap_id" value="{{ swap.id }}">
+              <input type="hidden" name="week_start" value="{{ schedule_week.week_start|date:'Y-m-d' }}">
+              <input type="text" name="response_note" placeholder="Note (optional)" class="text-input">
+              <button type="submit" class="btn-tertiary">Deny</button>
+            </form>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No pending swap requests.</p>
+    {% endif %}
+  </section>
+</div>
+
+<style>
+.schedule-builder { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+.page-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+.page-kicker { text-transform: uppercase; letter-spacing: 0.08em; color: #9aa6c5; margin: 0; font-weight: 700; }
+.page-sub { color: #9aa6c5; margin: 0.15rem 0 0; }
+.week-picker { display: flex; gap: 0.5rem; align-items: center; }
+.week-picker input { background: #11131a; color: #f4f6ff; border: 1px solid #283149; padding: 0.45rem 0.6rem; border-radius: 8px; }
+.card { background: #11131a; border: 1px solid #1f2433; border-radius: 14px; padding: 1.25rem; }
+.card__header { display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.section-kicker { text-transform: uppercase; letter-spacing: 0.08em; color: #9aa6c5; margin: 0; font-weight: 700; font-size: 0.85rem; }
+.form-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; }
+.form-actions { grid-column: 1 / -1; }
+.list-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1rem; }
+.list-card { background: #0d111c; border: 1px solid #1f2433; border-radius: 10px; padding: 1rem; }
+.list-card__title { margin: 0 0 0.35rem; color: #f2f4ff; font-weight: 700; }
+.list-card__note { margin: 0; color: #9aa6c5; }
+.list-card__meta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+.badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; background: #1c2335; color: #dbe4ff; font-size: 0.85rem; }
+.badge--success { background: rgba(66, 185, 131, 0.15); color: #75d6a3; }
+.muted { color: #9aa6c5; }
+.inline-form { display: grid; gap: 0.5rem; margin-top: 0.75rem; }
+.inline-details { margin-top: 0.35rem; }
+.inline-details summary { list-style: none; cursor: pointer; display: inline-block; }
+.inline-details summary::-webkit-details-marker { display: none; }
+.inline-actions { display: grid; gap: 0.5rem; }
+.text-input { background: #0d111c; border: 1px solid #283149; color: #f4f6ff; padding: 0.45rem 0.6rem; border-radius: 8px; width: 100%; }
+.btn-tertiary { background: transparent; border: 1px solid #3a425c; color: #dbe4ff; border-radius: 8px; padding: 0.4rem 0.8rem; cursor: pointer; }
+</style>
+{% endblock %}

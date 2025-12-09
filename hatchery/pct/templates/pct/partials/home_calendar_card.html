@@ -1,0 +1,8 @@
+<section class="reservation-group calendar-panel">
+    <header class="reservation-group__header">
+        <h2>{{ title|default:"My Calendar" }}</h2>
+        <a class="reservation-group__see-all" href="{{ calendar_url|default:'#' }}">{{ link_text|default:"Open Calendar" }}</a>
+    </header>
+    <div id="{{ calendar_id }}" class="home-calendar js-home-calendar" data-events-url="{{ events_url }}" data-calendar-height="{{ height|default:'500px' }}">
+    </div>
+</section>

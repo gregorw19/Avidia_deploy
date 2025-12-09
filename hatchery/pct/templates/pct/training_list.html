@@ -1,0 +1,131 @@
+{% extends "pct/base_profile.html" %}
+{% block content %}
+<div class="training-list-page">
+  <div class="training-list-header">
+    <h1>Available Trainings</h1>
+    <p>Reserve a seat in an upcoming session before it fills up.</p>
+  </div>
+
+  {% if trainings %}
+    <div class="training-card-grid">
+      {% for training in trainings %}
+        <article class="training-card">
+          <div class="training-card__header">
+            <span class="training-card__machine">{{ training.machine }}</span>
+            <span class="training-card__level">Level {{ training.level.level }}</span>
+          </div>
+          <h2 class="training-card__title">{{ training.name }}</h2>
+          <p class="training-card__time">
+            {% if training.time %}
+              {{ training.time|date:"M j, Y" }} · {{ training.time|date:"g:i A" }}
+            {% else %}
+              Time TBD
+            {% endif %}
+          </p>
+          {% if training.certification_type %}
+            <p class="training-card__cert">Certification Track: {{ training.certification_type.name }}</p>
+          {% endif %}
+          <p class="training-card__instructor">
+            Instructor:
+            {% if training.staff %}
+              {{ training.staff.get_full_name }}
+            {% else %}
+              Assigned Soon
+            {% endif %}
+          </p>
+
+          <div class="training-card__actions">
+            {% if training.can_signup %}
+              <form method="post" action="{% url 'training-signup' training.pk %}" onsubmit="return confirm('Sign up for {{ training.name|escapejs }}?');">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary">Sign Up</button>
+              </form>
+            {% elif training.invited_for_me %}
+              <form method="post" action="{% url 'respond_invitation' training.invited_entry.id %}">
+                {% csrf_token %}
+                <button name="response" value="accept" class="btn-primary">Accept Invite</button>
+                <button name="response" value="decline" class="btn-primary btn-danger">Decline</button>
+              </form>
+              <p class="training-card__notice">You’re invited from the waitlist.</p>
+            {% elif training.is_waitlisted %}
+              <form method="post" action="{% url 'leave_waitlist' training.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary btn-danger">Leave Waitlist</button>
+              </form>
+              <p class="training-card__notice">Status: {{ training.waitlist_status|capfirst }}</p>
+            {% elif training.is_mine %}
+              <form method="post" action="{% url 'training-cancel' training.pk %}" onsubmit="return confirm('Cancel your reservation for {{ training.name|escapejs }}?');">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn-primary btn-danger">Cancel Reservation</button>
+              </form>
+            {% elif training.is_full %}
+              <form method="post" action="{% url 'join_waitlist' training.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-warning">Join Waitlist</button>
+              </form>
+              <p class="training-card__notice">
+                {% if training.lock_reason %}
+                  {{ training.lock_reason }}.
+                {% else %}
+                  Student slot already filled.
+                {% endif %}
+              </p>
+            {% else %}
+              <button type="button" class="btn-primary btn-disabled" disabled>Locked</button>
+              {% if training.requirement_text %}
+                <p class="training-card__notice">Requires {{ training.requirement_text }} certification first.</p>
+              {% endif %}
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="training-list-empty">
+      <p>No trainings are open right now. Check back soon.</p>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+.training-card__notice {
+  margin-left: 10px; 
+  font-size: 0.85rem;
+  color: #ffb347;
+  margin-top: 0.5rem;
+}
+.btn-disabled {
+  background: #555 !important;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.btn-danger {
+  background: #d32f2f !important;
+}
+.btn-danger:hover {
+  background: #b71c1c !important;
+}
+.training-card__notice {
+  font-size: 0.85rem;
+  color: #ffb347;
+  margin-top: 0.5rem;
+}
+.training-card__cert {
+  font-size: 0.95rem;
+  color: #d0d8ff;
+}
+.btn-warning {
+  background-color: #ffc107;
+  color: #000;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-warning:hover {
+  background-color: #e0a800;
+}
+</style>
+{% endblock %}

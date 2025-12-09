@@ -1,0 +1,310 @@
+{% extends "pct/base_profile.html" %}
+
+{% block content %}
+<div class="collab-reservations">
+  <section class="reservation-form-card">
+    <h1>Reserve a Hatchery Space</h1>
+    <p class="form-description">
+      Pick the space you need for class time. Reservations are exclusive, so double-check upcoming bookings below before submitting.
+    </p>
+    <form method="post" class="reservation-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="form-errors">
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <div class="form-grid">
+        <label>
+          <span>Space</span>
+          {{ form.room }}
+          {% for error in form.room.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </label>
+        <label>
+          <span>Class Name</span>
+          {{ form.class_name }}
+          {% for error in form.class_name.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </label>
+        <label>
+          <span>Start Time</span>
+          {{ form.start_time }}
+          {% for error in form.start_time.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </label>
+        <label>
+          <span>End Time</span>
+          {{ form.end_time }}
+          {% for error in form.end_time.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </label>
+      </div>
+      <label class="notes-field">
+        <span>Notes (optional)</span>
+        {{ form.notes }}
+        {% for error in form.notes.errors %}
+          <span class="field-error">{{ error }}</span>
+        {% endfor %}
+      </label>
+      <button type="submit" class="btn-primary reserve-submit">Reserve Space</button>
+    </form>
+  </section>
+
+  <section class="reservation-lists">
+    <div class="reservation-panel">
+      <header>
+        <h2>Your Upcoming Reservations</h2>
+      </header>
+      {% if my_upcoming %}
+        <div class="reservation-card-grid">
+          {% for reservation in my_upcoming %}
+            <article class="reservation-card">
+              <div class="reservation-card__header">
+                <span class="reservation-room">{{ reservation.get_room_display }}</span>
+                <span class="reservation-class">{{ reservation.class_name }}</span>
+              </div>
+              <p class="reservation-time">
+                {{ reservation.start_time|date:"M j, Y · g:i A" }} – {{ reservation.end_time|date:"g:i A" }}
+              </p>
+              {% if reservation.notes %}
+              <p class="reservation-notes">{{ reservation.notes }}</p>
+              {% endif %}
+              <form method="post" action="{% url 'room-reservation-cancel' reservation.pk %}" onsubmit="return confirm('Cancel this reservation?');">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary btn-cancel">Cancel Reservation</button>
+              </form>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="reservation-empty">You have no upcoming reservations.</p>
+      {% endif %}
+    </div>
+
+    <div class="reservation-panel">
+      <header>
+        <h2>Other Upcoming Reservations</h2>
+        <p class="panel-subtitle">Use this list to avoid booking conflicts.</p>
+      </header>
+      {% if other_upcoming %}
+        <table class="reservation-table">
+          <thead>
+            <tr>
+              <th>Space</th>
+              <th>Class</th>
+              <th>Time</th>
+              <th>Reserved By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for reservation in other_upcoming %}
+              <tr>
+                <td>{{ reservation.get_room_display }}</td>
+                <td>{{ reservation.class_name }}</td>
+                <td>{{ reservation.start_time|date:"M j, Y" }} {{ reservation.start_time|date:"g:i A" }} – {{ reservation.end_time|date:"g:i A" }}</td>
+                <td>{{ reservation.collaborator.get_full_name }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="reservation-empty">No other reservations are scheduled.</p>
+      {% endif %}
+    </div>
+
+    {% if my_past %}
+    <div class="reservation-panel">
+      <header>
+        <h2>Recent Reservations</h2>
+      </header>
+      <ul class="past-reservations">
+        {% for reservation in my_past %}
+          <li>
+            <strong>{{ reservation.get_room_display }}</strong>
+            on {{ reservation.start_time|date:"M j, Y" }} for {{ reservation.class_name }}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<style>
+.collab-reservations {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.reservation-form-card {
+  background-color: #171A21;
+  padding: 2rem;
+  border-radius: 16px;
+  border: 1px solid #2a2d34;
+}
+
+.reservation-form-card h1 {
+  margin-bottom: 0.5rem;
+  font-size: 1.75rem;
+}
+
+.form-description {
+  color: #ddd;
+  margin-bottom: 1.5rem;
+}
+
+.reservation-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-weight: 600;
+  color: #dfe3ff;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.notes-field {
+  margin-bottom: 1rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #3a3d44;
+  background: #1f232b;
+  color: white;
+}
+
+.form-errors, .field-error {
+  color: #ff7f7f;
+  font-size: 0.9rem;
+}
+
+.field-error {
+  margin-top: 0.25rem;
+}
+
+.reserve-submit {
+  margin-top: 0.5rem;
+}
+
+.reservation-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.reservation-panel {
+  background-color: #171A21;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid #2a2d34;
+}
+
+.reservation-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.reservation-card {
+  background-color: #1f232b;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid #2a2d34;
+}
+
+.reservation-room {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #9fb3ff;
+}
+
+.reservation-class {
+  font-weight: 500;
+}
+
+.reservation-time {
+  color: #ccc;
+  font-size: 0.95rem;
+}
+
+.reservation-notes {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid #3a3d44;
+  color: #f5f7ff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: #2a2d34;
+}
+
+.btn-cancel {
+  align-self: flex-start;
+}
+
+.reservation-empty {
+  color: #ccc;
+  margin: 1rem 0 0;
+}
+
+.reservation-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.reservation-table th,
+.reservation-table td {
+  padding: 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid #2a2d34;
+}
+
+.reservation-table th {
+  color: white;
+  font-weight: 600;
+}
+
+.panel-subtitle {
+  color: #bbb;
+  margin-top: 0.25rem;
+}
+
+.past-reservations {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: #ddd;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,614 @@
+{% extends "pct/base.html" %}
+
+{% block title %}Reservations | The Hatchery{% endblock %}
+{% block body_class %} reservations-page{% endblock %}
+{% block main_class %} home-main{% endblock %}
+
+{% block nav %}
+    {% include 'pct/partials/navbar.html' %}
+{% endblock %}
+
+{% block header %}
+<div>Room Reservations</div>
+{% endblock %}
+
+{% block content %}
+<div class="reservations-layout">
+    <section class="reservation-panel">
+        <header class="reservation-panel__header">
+            <div>
+                <h2>Request a Room</h2>
+                <p>Pick a Hatchery space, date, and affiliation so staff can review.</p>
+            </div>
+            <ul class="reservation-highlights">
+                <li>Spaces on floors two &amp; three</li>
+                <li>Staff confirmation required</li>
+                <li>1 request per timeslot</li>
+            </ul>
+        </header>
+        <form method="post" class="room-reservation-form">
+            {% csrf_token %}
+            <input type="hidden" name="form_type" value="room_request">
+            {% if room_reservation_form.non_field_errors %}
+            <div class="form-alert form-alert--error">
+                {% for error in room_reservation_form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="form-body">
+                <div class="form-field form-field--full">
+                    <label class="floating-label" for="{{ room_reservation_form.room.id_for_label }}">
+                        <span>Room</span>
+                        <div class="input-shell input-shell--select">
+                            {{ room_reservation_form.room }}
+                        </div>
+                    </label>
+                    {% for error in room_reservation_form.room.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="form-field">
+                    <label class="floating-label" for="{{ room_reservation_form.start_date.id_for_label }}">
+                        <span>Start Date</span>
+                        <div class="input-shell">
+                            {{ room_reservation_form.start_date }}
+                        </div>
+                        <small>{{ room_reservation_form.start_date.help_text }}</small>
+                    </label>
+                    {% for error in room_reservation_form.start_date.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="form-field">
+                    <label class="floating-label">
+                        <span>Start Time</span>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <div class="input-shell input-shell--select" style="flex: 1;">
+                                {{ room_reservation_form.start_time_hour }}
+                            </div>
+                            <span style="color: #8895b6;">:</span>
+                            <div class="input-shell input-shell--select" style="flex: 1;">
+                                {{ room_reservation_form.start_time_minute }}
+                            </div>
+                        </div>
+                        <small>{{ room_reservation_form.start_time_minute.help_text }}</small>
+                    </label>
+                    {% for error in room_reservation_form.start_time_hour.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                    {% for error in room_reservation_form.start_time_minute.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="form-field">
+                    <label class="floating-label" for="{{ room_reservation_form.end_date.id_for_label }}">
+                        <span>End Date</span>
+                        <div class="input-shell">
+                            {{ room_reservation_form.end_date }}
+                        </div>
+                        <small>{{ room_reservation_form.end_date.help_text }}</small>
+                    </label>
+                    {% for error in room_reservation_form.end_date.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="form-field">
+                    <label class="floating-label">
+                        <span>End Time</span>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <div class="input-shell input-shell--select" style="flex: 1;">
+                                {{ room_reservation_form.end_time_hour }}
+                            </div>
+                            <span style="color: #8895b6;">:</span>
+                            <div class="input-shell input-shell--select" style="flex: 1;">
+                                {{ room_reservation_form.end_time_minute }}
+                            </div>
+                        </div>
+                        <small>{{ room_reservation_form.end_time_minute.help_text }}</small>
+                    </label>
+                    {% for error in room_reservation_form.end_time_hour.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                    {% for error in room_reservation_form.end_time_minute.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="form-field">
+                    <label class="floating-label" for="{{ room_reservation_form.affiliation.id_for_label }}">
+                        <span>Class / Organization</span>
+                        <div class="input-shell">
+                            {{ room_reservation_form.affiliation }}
+                        </div>
+                        <small>{{ room_reservation_form.affiliation.help_text }}</small>
+                    </label>
+                    {% for error in room_reservation_form.affiliation.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="form-field form-field--full">
+                    <label class="floating-label checkbox-label" for="{{ room_reservation_form.is_exclusive_request.id_for_label }}">
+                        <span>Exclusive classroom/station use</span>
+                        <div class="checkbox-shell">
+                            {{ room_reservation_form.is_exclusive_request }}
+                            <small>{{ room_reservation_form.is_exclusive_request.help_text }}</small>
+                        </div>
+                    </label>
+                    {% for error in room_reservation_form.is_exclusive_request.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-actions">
+                <p class="form-actions__note">Submissions notify the Hatchery staff instantly. Expect a reply within 1 business day.</p>
+                <button type="submit" class="primary-btn">Submit Request</button>
+            </div>
+        </form>
+    </section>
+
+    {% if pending_room_reservations %}
+    <section class="reservation-panel">
+        <header class="reservation-panel__header">
+            <div>
+                <h2>Pending Approvals</h2>
+                <p>Review student requests so spaces can be scheduled.</p>
+            </div>
+        </header>
+        <div class="room-reservation-cards">
+            {% for request in pending_room_reservations %}
+                <article class="room-reservation-card">
+                    <div class="room-reservation-card__header">
+                        <p class="reservation-card__title">{{ request.get_room_display }}</p>
+                        <span class="status-badge status-badge--{{ request.status }}">{{ request.get_status_display }}</span>
+                    </div>
+                    {% if request.is_exclusive_request %}
+                        <p class="reservation-card__tag">Exclusive request</p>
+                    {% endif %}
+                    <p class="reservation-card__date">{{ request.start_time|date:"l, F j, Y" }}</p>
+                    <p class="reservation-card__meta">{{ request.start_time|date:"g:i A" }} – {{ request.end_time|date:"g:i A" }}</p>
+                    <p class="reservation-card__meta">Requested by {{ request.requester.get_full_name }}</p>
+                    <p class="reservation-card__meta">Affiliation: {{ request.affiliation }}</p>
+                    <div class="room-reservation-card__actions">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="approve_reservation">
+                            <input type="hidden" name="reservation_id" value="{{ request.id }}">
+                            <button type="submit" class="btn-approve">Approve</button>
+                        </form>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="deny_reservation">
+                            <input type="hidden" name="reservation_id" value="{{ request.id }}">
+                            <button type="submit" class="btn-deny">Deny</button>
+                        </form>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="reservation-panel" style="margin-bottom: 3rem;">
+        <header class="reservation-panel__header">
+            <div>
+                <h2>My Room Requests</h2>
+                <p>Track statuses for everything you've submitted.</p>
+            </div>
+        </header>
+        <div class="room-reservation-cards">
+            {% if my_room_reservations %}
+                {% for request in my_room_reservations %}
+                    <article class="room-reservation-card">
+                        <div class="room-reservation-card__header">
+                            <p class="reservation-card__title">{{ request.get_room_display }}</p>
+                            <span class="status-badge status-badge--{{ request.status }}">{{ request.get_status_display }}</span>
+                        </div>
+                        {% if request.is_exclusive_request %}
+                            <p class="reservation-card__tag">Exclusive request</p>
+                        {% endif %}
+                        <p class="reservation-card__date">{{ request.start_time|date:"l, F j, Y" }}</p>
+                        <p class="reservation-card__meta">{{ request.start_time|date:"g:i A" }} – {{ request.end_time|date:"g:i A" }}</p>
+                        <p class="reservation-card__meta">Affiliation: {{ request.affiliation }}</p>
+                        {% if request.reviewed_by %}
+                            <p class="reservation-card__meta">Reviewed by {{ request.reviewed_by.get_full_name }}</p>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p class="reservation-empty">You don't have any room requests yet.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if staff_can_moderate_reservations and all_room_reservations %}
+    <section class="reservation-panel" style="margin-bottom: 3rem;">
+        <header class="reservation-panel__header">
+            <div>
+                <h2>All Room Requests</h2>
+                <p>Staff/Admin view of every reservation.</p>
+            </div>
+        </header>
+        <div class="room-reservation-cards">
+            {% for request in all_room_reservations %}
+                <article class="room-reservation-card">
+                    <div class="room-reservation-card__header">
+                        <p class="reservation-card__title">{{ request.get_room_display }}</p>
+                        <span class="status-badge status-badge--{{ request.status }}">{{ request.get_status_display }}</span>
+                    </div>
+                    {% if request.is_exclusive_request %}
+                        <p class="reservation-card__tag">Exclusive request</p>
+                    {% endif %}
+                    <p class="reservation-card__meta">Requested by {{ request.requester.get_full_name }}</p>
+                    <p class="reservation-card__date">{{ request.start_time|date:"l, F j, Y" }}</p>
+                    <p class="reservation-card__meta">{{ request.start_time|date:"g:i A" }} – {{ request.end_time|date:"g:i A" }}</p>
+                    <p class="reservation-card__meta">Affiliation: {{ request.affiliation }}</p>
+                    {% if request.reviewed_by %}
+                        <p class="reservation-card__meta">Reviewed by {{ request.reviewed_by.get_full_name }}</p>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_body %}
+{{ block.super }}
+<style>
+.reservations-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.reservation-panel {
+    background: radial-gradient(circle at top left, rgba(92, 115, 255, 0.12), transparent 55%), #11131a;
+    border: 1px solid #1f2433;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 25px 60px rgba(5, 6, 12, 0.55);
+}
+
+.reservation-panel__header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.reservation-panel__header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #f7f9ff;
+}
+
+.reservation-panel__header p {
+    color: #aab0c6;
+    margin-top: 0.25rem;
+}
+
+.reservation-highlights {
+    list-style: none;
+    display: flex;
+    gap: 0.75rem;
+    padding: 0;
+    margin: 0;
+}
+
+.reservation-highlights li {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    color: #dfe3ff;
+}
+
+.room-reservation-form {
+    margin-top: 1.75rem;
+    background: #0d111c;
+    border: 1px solid #1f2433;
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-alert {
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+}
+
+.form-alert--error {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.35);
+    color: #ff9e9e;
+}
+
+.form-body {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.form-field--full {
+    grid-column: 1 / -1;
+}
+
+.floating-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-weight: 600;
+    color: #e2e8ff;
+}
+
+.input-shell {
+    border: 1px solid #283149;
+    border-radius: 12px;
+    padding: 0.6rem 0.9rem;
+    background: rgba(19, 26, 42, 0.85);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    display: flex;
+    align-items: center;
+}
+
+.input-shell--select select {
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, #8fa2ff 50%), linear-gradient(135deg, #8fa2ff 50%, transparent 50%);
+    background-position: calc(100% - 15px) center, calc(100% - 10px) center;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+}
+
+.room-reservation-form select,
+.room-reservation-form input,
+.room-reservation-form textarea {
+    background: transparent;
+    border: none;
+    color: #f9fbff;
+    width: 100%;
+    font-size: 1rem;
+    padding: 0;
+}
+
+.room-reservation-form select {
+    background-color: rgba(19, 26, 42, 0.85);
+}
+
+.room-reservation-form select option {
+    background-color: #0d111c;
+    color: #f7f9ff;
+}
+
+.room-reservation-form input[type="date"] {
+    cursor: pointer;
+    min-height: 20px;
+    position: relative;
+}
+
+/* Ensure date inputs are fully clickable */
+.input-shell:has(input[type="date"]) {
+    cursor: pointer;
+}
+
+.input-shell:has(input[type="date"]):hover {
+    border-color: #5b8cff;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.room-reservation-form input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.7;
+    filter: invert(1) brightness(1.2);
+    width: 20px;
+    height: 20px;
+    margin-left: auto;
+}
+
+.room-reservation-form input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+.room-reservation-form select:focus,
+.room-reservation-form input:focus {
+    outline: none;
+}
+
+.room-reservation-form small {
+    color: #8895b6;
+    font-weight: 500;
+}
+
+.field-error {
+    color: #ff9e9e;
+    font-size: 0.85rem;
+    margin-top: 0.35rem;
+}
+
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.form-actions__note {
+    margin: 0;
+    color: #9ba8c9;
+    font-size: 0.95rem;
+}
+
+.primary-btn {
+    align-self: flex-start;
+    background: linear-gradient(120deg, #6b8cff, #8a68ff);
+    border: none;
+    border-radius: 999px;
+    color: #fff;
+    padding: 0.75rem 1.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 15px 30px rgba(104, 119, 255, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.primary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 20px 35px rgba(104, 119, 255, 0.45);
+}
+
+.room-reservation-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.room-reservation-card {
+    background: #11131a;
+    border: 1px solid #1f212a;
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 15px 30px rgba(7, 8, 14, 0.45);
+    color: #eef1ff;
+}
+
+.room-reservation-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.reservation-card__tag {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 8px;
+    background: rgba(138, 104, 255, 0.18);
+    color: #cbb7ff;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.status-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge--pending {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+}
+
+.status-badge--approved {
+    background: rgba(102, 187, 106, 0.15);
+    color: #66bb6a;
+}
+
+.status-badge--denied {
+    background: rgba(244, 67, 54, 0.15);
+    color: #f44336;
+}
+
+.room-reservation-card__actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.room-reservation-card__actions form {
+    flex: 1;
+}
+
+.btn-approve,
+.btn-deny {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    padding: 0.55rem 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-approve {
+    background: rgba(102, 187, 106, 0.15);
+    color: #7be182;
+}
+
+.btn-approve:hover {
+    background: rgba(102, 187, 106, 0.25);
+}
+
+.btn-deny {
+    background: rgba(244, 67, 54, 0.15);
+    color: #ff9a99;
+}
+
+.btn-deny:hover {
+    background: rgba(244, 67, 54, 0.25);
+}
+
+.reservation-empty {
+    margin-top: 1rem;
+    color: #aab0c6;
+}
+
+.checkbox-label {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.checkbox-shell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+    .reservation-panel {
+        padding: 1.5rem;
+    }
+
+    .reservation-highlights {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .primary-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startDateInput = document.getElementById('{{ room_reservation_form.start_date.id_for_label }}');
+    const endDateInput = document.getElementById('{{ room_reservation_form.end_date.id_for_label }}');
+    
+    // Auto-sync end date with start date (reservations must be same day)
+    if (startDateInput && endDateInput) {
+        startDateInput.addEventListener('change', function() {
+            if (startDateInput.value && !endDateInput.value) {
+                endDateInput.value = startDateInput.value;
+            }
+        });
+        
+        // Prevent selecting different end date
+        endDateInput.addEventListener('change', function() {
+            if (startDateInput.value && endDateInput.value !== startDateInput.value) {
+                endDateInput.value = startDateInput.value;
+                alert('Reservations must begin and end on the same day. End date has been set to match start date.');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

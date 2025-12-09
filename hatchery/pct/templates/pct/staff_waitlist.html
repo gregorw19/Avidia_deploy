@@ -1,0 +1,179 @@
+{% extends "pct/base_profile.html" %}
+
+{% block content %}
+<div class="training-form-page">
+  <div class="training-form-header">
+    <div>
+      <p class="training-form-kicker">Staff Tools</p>
+      <h1>Training Waitlist</h1>
+      <p>Review students waiting for sessions and manage invitations.</p>
+    </div>
+    <div class="training-form-badges">
+      <span class="training-badge">Staff only</span>
+      <span class="training-badge training-badge--ghost">Manage waitlist entries</span>
+    </div>
+  </div>
+
+  <div class="training-form-layout">
+    <div class="training-form-card">
+      {% if waitlist_entries %}
+        <section class="form-section">
+          <div class="section-header">
+            <span class="section-kicker">Current waitlist</span>
+            <h2>Pending students</h2>
+            <p>These students are waiting for a training slot.</p>
+          </div>
+          <table class="table form-grid--two">
+            <thead>
+              <tr>
+                <th>Training</th>
+                <th>Machine</th>
+                <th>Student</th>
+                <th>Status</th>
+                <th>Requested At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in waitlist_entries %}
+                <tr>
+                  <td>{{ entry.training.name }}</td>
+                  <td>{{ entry.training.machine }}</td>
+                  <td>{{ entry.profile.get_full_name }}</td>
+                  <td>{{ entry.get_status_display }}</td>
+                  <td>{{ entry.created_at|date:"M d, Y H:i" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      {% else %}
+        <p>No one is currently on the waitlist.</p>
+      {% endif %}
+    </div>
+
+    <aside class="training-form-aside">
+      <div class="info-card">
+        <h3>Waitlist tips</h3>
+        <ul>
+          <li>Invite students when a slot opens.</li>
+          <li>Declined entries remain visible for record keeping.</li>
+          <li>Use the “Manage Trainings” page to assign seats.</li>
+        </ul>
+      </div>
+      <div class="info-card">
+        <h3>You're logged in as</h3>
+        <dl>
+          <dt>Staff lead</dt>
+          <dd>{{ request.user.profile.get_full_name }}</dd>
+          <dt>Email</dt>
+          <dd>{{ request.user.email }}</dd>
+        </dl>
+        <p class="info-card__meta">Only staff can view and manage the waitlist.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<style>
+.training-form-page {
+  max-width: 1200px !important;
+  width: 100%;
+}
+
+.training-form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(220px, 1fr) !important;
+  gap: 2rem;
+}
+
+.training-form-card {
+  max-width: none !important;
+  width: 100%;
+}
+
+.form-section {
+  min-width: 0;
+  width: 100%;
+  padding: 24px 32px 24px 32px !important;
+  overflow: visible;
+}
+
+.form-grid--two {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: 20px;
+  padding-right: 4rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.table th,
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #444;
+  text-align: left;
+  color: white;
+}
+
+.table th {
+  background-color: #2A2D35;
+  font-weight: 600;
+}
+
+.table tr:hover {
+  background-color: #333;
+}
+
+.training-form-card .input-shell {
+  background-color: #2A2D35;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.training-form-card .input-shell:focus-within {
+  border-color: #5B8CFF;
+  box-shadow: 0 0 0 4px rgba(91, 140, 255, 0.2);
+}
+
+.training-form-card .input-shell--select {
+  cursor: pointer;
+}
+
+.training-form-card .input-shell--select select {
+  background: transparent;
+  border: none;
+  color: white;
+  width: 100%;
+  font-size: 16px;
+  padding: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #5B8CFF 50%), linear-gradient(135deg, #5B8CFF 50%, transparent 50%);
+  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  min-height: 20px;
+}
+
+.training-form-card .input-shell--select select option {
+  background-color: #2A2D35;
+  color: white;
+  padding: 8px;
+}
+
+.training-form-card .input-shell--select select:focus {
+  outline: none;
+}
+
+.training-form-card .input-shell--select:hover {
+  border-color: rgba(91, 140, 255, 0.5);
+}
+</style>
+{% endblock %}

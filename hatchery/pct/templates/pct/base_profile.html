@@ -1,0 +1,268 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hatchery Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="{% static 'pct/style_guide.css' %}">
+  <link rel="stylesheet" href="{% static 'pct/profile.css' %}">
+</head>
+
+<body>
+  {% block nav %}
+    {% include 'pct/partials/navbar.html' %}
+  {% endblock %}
+
+  {% if messages %}
+  <div class="messages" style="display: none;">
+    {% for message in messages %}
+      <div class="message">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="content-wrapper">
+    {% block content %}
+    {% endblock %}
+  </div>
+
+  {% include 'pct/footer.html' %}
+
+  <!-- Custom Alert/Confirm Dialog -->
+  <div id="custom-alert-overlay" class="alert-overlay">
+    <div class="alert-dialog">
+      <div class="alert-header">
+        <h3 id="alert-title">Alert</h3>
+      </div>
+      <div class="alert-body">
+        <p id="alert-message"></p>
+      </div>
+      <div class="alert-footer">
+        <button id="alert-ok-btn" class="btn-alert-primary">OK</button>
+        <button id="alert-cancel-btn" class="btn-alert-secondary" style="display:none;">Cancel</button>
+        <button id="alert-proceed-btn" class="btn-alert-primary" style="display:none;">Proceed</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+  /* ===== Custom Alert/Confirm Dialog Styles ===== */
+  .alert-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .alert-overlay.active {
+    display: flex;
+  }
+
+  .alert-dialog {
+    background-color: #171A21;
+    border-radius: 12px;
+    padding: 0;
+    width: 90%;
+    max-width: 450px;
+    border: 2px solid #2a2d34;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+    animation: alertSlideIn 0.2s ease-out;
+  }
+
+  @keyframes alertSlideIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .alert-header {
+    padding: 1.5rem 2rem 1rem;
+    border-bottom: 2px solid #2a2d34;
+  }
+
+  .alert-header h3 {
+    color: white;
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .alert-body {
+    padding: 1.5rem 2rem;
+  }
+
+  .alert-body p {
+    color: #ccc;
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .alert-footer {
+    padding: 1rem 2rem 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    border-top: 2px solid #2a2d34;
+  }
+
+  .btn-alert-primary {
+    background-color: #5c73ff;
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+    min-width: 100px;
+  }
+
+  .btn-alert-primary:hover {
+    background-color: #4a63ff;
+  }
+
+  .btn-alert-secondary {
+    background-color: #2a2d34;
+    border: 2px solid #3a3d44;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+    min-width: 100px;
+  }
+
+  .btn-alert-secondary:hover {
+    background-color: #3a3d44;
+    border-color: #4a4d54;
+  }
+
+  .alert-overlay.warning .alert-header h3 {
+    color: #ffa726;
+  }
+
+  .alert-overlay.error .alert-header h3 {
+    color: #f44336;
+  }
+
+  .alert-overlay.success .alert-header h3 {
+    color: #66bb6a;
+  }
+  </style>
+
+  <script>
+  // Custom Alert/Confirm Dialog Functions
+  function showAlert(message, title = 'Alert', type = 'info') {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('custom-alert-overlay');
+      const titleEl = document.getElementById('alert-title');
+      const messageEl = document.getElementById('alert-message');
+      const okBtn = document.getElementById('alert-ok-btn');
+      const cancelBtn = document.getElementById('alert-cancel-btn');
+      const proceedBtn = document.getElementById('alert-proceed-btn');
+      
+      overlay.className = 'alert-overlay';
+      overlay.classList.add(type);
+      
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+      
+      okBtn.style.display = 'inline-block';
+      cancelBtn.style.display = 'none';
+      proceedBtn.style.display = 'none';
+      
+      overlay.classList.add('active');
+      
+      const handleOk = () => {
+        overlay.classList.remove('active');
+        okBtn.removeEventListener('click', handleOk);
+        overlay.removeEventListener('click', handleOverlayClick);
+        resolve(true);
+      };
+      
+      const handleOverlayClick = (e) => {
+        if (e.target === overlay) {
+          handleOk();
+        }
+      };
+      
+      okBtn.addEventListener('click', handleOk);
+      overlay.addEventListener('click', handleOverlayClick);
+    });
+  }
+
+  function showConfirm(message, title = 'Confirm', type = 'warning') {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('custom-alert-overlay');
+      const titleEl = document.getElementById('alert-title');
+      const messageEl = document.getElementById('alert-message');
+      const okBtn = document.getElementById('alert-ok-btn');
+      const cancelBtn = document.getElementById('alert-cancel-btn');
+      const proceedBtn = document.getElementById('alert-proceed-btn');
+      
+      overlay.className = 'alert-overlay';
+      overlay.classList.add(type);
+      
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+      
+      okBtn.style.display = 'none';
+      cancelBtn.style.display = 'inline-block';
+      proceedBtn.style.display = 'inline-block';
+      
+      overlay.classList.add('active');
+      
+      const handleCancel = () => {
+        overlay.classList.remove('active');
+        cancelBtn.removeEventListener('click', handleCancel);
+        proceedBtn.removeEventListener('click', handleProceed);
+        overlay.removeEventListener('click', handleOverlayClick);
+        resolve(false);
+      };
+      
+      const handleProceed = () => {
+        overlay.classList.remove('active');
+        cancelBtn.removeEventListener('click', handleCancel);
+        proceedBtn.removeEventListener('click', handleProceed);
+        overlay.removeEventListener('click', handleOverlayClick);
+        resolve(true);
+      };
+      
+      const handleOverlayClick = (e) => {
+        if (e.target === overlay) {
+          handleCancel();
+        }
+      };
+      
+      cancelBtn.addEventListener('click', handleCancel);
+      proceedBtn.addEventListener('click', handleProceed);
+      overlay.addEventListener('click', handleOverlayClick);
+    });
+  }
+  </script>
+</body>
+<style>
+  .nav_objects h1 a{
+    text-decoration: none;
+    color: white;
+  }
+</style>
+</html>

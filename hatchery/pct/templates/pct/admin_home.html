@@ -1,0 +1,83 @@
+{% extends "pct/base.html" %}
+
+{% block title %}Home | The Hatchery{% endblock %}
+{% block body_class %} home-page{% endblock %}
+{% block main_class %} home-main{% endblock %}
+
+{% block nav %}
+  {% include 'pct/partials/navbar.html' %}
+{% endblock %}
+
+{% block header %}
+<div>Welcome to the Hatchery!</div>
+{% endblock %}
+
+{% block content %}
+<div class="home-cards">
+    {% if invited_trainings %}
+        <section class="reservation-group">
+            <header class="reservation-group__header">
+                <h2>Training Invitations</h2>
+                <span class="reservation-group__see-all">Claim your spot</span>
+            </header>
+            <div class="reservation-group__cards invite-cards">
+                {% for entry in invited_trainings %}
+                    <article class="reservation-card reservation-card--invite">
+                        <p class="reservation-card__date">
+                            {% if entry.training.time %}
+                                {{ entry.training.time|date:"l, F j, Y" }} at {{ entry.training.time|date:"g:i A" }}
+                            {% else %}
+                                Schedule TBD
+                            {% endif %}
+                        </p>
+                        <p class="reservation-card__title">{{ entry.training.name }}</p>
+                        <p class="reservation-card__meta">Machine: {{ entry.training.machine }}</p>
+                        <p class="reservation-card__meta">Level {{ entry.training.level.level }}</p>
+                        <form method="post" action="{% url 'respond_invitation' entry.id %}" class="invite-actions">
+                            {% csrf_token %}
+                            <button name="response" value="accept" class="btn-primary">Accept</button>
+                            <button name="response" value="decline" class="btn-primary btn-danger">Decline</button>
+                        </form>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="reservation-group">
+        <header class="reservation-group__header">
+            <h2>Past Reports:</h2>
+            <a class="reservation-group__see-all" href="{% url 'admin_log' %}">See All</a>
+        </header>
+        <div class="reservation-group__cards">
+            <article class="reservation-card">
+                <p class="reservation-card__date">Sunday, October 19, 2025</p>
+                <p class="reservation-card__title">Week of 10/12 - 10/18</p>
+                <div class="reservation-card__actions">
+                    <a class="reservation-card__btn reservation-card__btn--primary" href="#">View Report</a>
+                </div>
+            </article>
+            <article class="reservation-card">
+                <p class="reservation-card__date">Sunday, October 19, 2025</p>
+                <p class="reservation-card__title">Week of 10/5 - 10/11</p>
+                <div class="reservation-card__actions">
+                    <a class="reservation-card__btn reservation-card__btn--primary" href="#">View Report</a>
+                </div>
+            </article>
+             
+        </div>
+    </section>
+</div>
+
+<style>
+.reservation-card--invite {
+  border: 1px solid #5B8CFF;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+</style>
+{% endblock %}

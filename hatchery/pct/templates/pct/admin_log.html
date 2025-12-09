@@ -1,0 +1,523 @@
+{% extends "pct/base.html" %}
+{% load static %}
+
+{% block title %}Admin Log | The Hatchery{% endblock %}
+{% block body_class %} home-page{% endblock %}
+{% block main_class %} home-main{% endblock %}
+
+{% block nav %}
+    {% include 'pct/partials/navbar.html' %}
+{% endblock %}
+
+{% block header %}
+<div>Admin Log</div>
+{% endblock %}
+
+{% block content %}
+<div class="admin-log-layout">
+    <div class="admin-log-main">
+        <section class="reports-section">
+            <header class="section-header">
+                <h2>Open Reports</h2>
+                <p>Review and manage user-submitted reports</p>
+            </header>
+            <div class="search-container">
+                <input type="text" id="report-search" class="search-input" placeholder="Search by title...">
+            </div>
+            <div class="report-cards scrollable-container" id="report-cards-container">
+                {% if reports %}
+                    {% for report in reports %}
+                        <article class="report-card" data-title="{{ report.title|lower }}" onclick="openReportModal({{ report.id }}, '{{ report.title|escapejs }}', '{{ report.get_category_display|escapejs }}', '{{ report.description|escapejs }}', '{{ report.submitted_by.get_full_name|escapejs }}', '{{ report.created_at|date:"F j, Y g:i A" }}')">
+                            <div class="report-card__header">
+                                <h3 class="report-card__title">{{ report.title }}</h3>
+                                <span class="report-card__category">{{ report.get_category_display }}</span>
+                            </div>
+                            <p class="report-card__date">{{ report.created_at|date:"M j, Y" }}</p>
+                        </article>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty-state">No open reports</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+    
+    <aside class="activity-log-section">
+        <header class="section-header">
+            <h2>Activity Log</h2>
+            <p>Recent user activities</p>
+        </header>
+            <div class="search-container">
+                <input type="date" id="log-date-search" class="search-input search-input--date" placeholder="Pick a day...">
+            </div>
+            <div class="activity-log scrollable-container" id="activity-log-container">
+                {% if activity_logs %}
+                    {% for log in activity_logs %}
+                        <div class="activity-item" data-date="{{ log.created_at|date:'Y-m-d' }}">
+                            <p class="activity-description">{{ log.description }}</p>
+                            <p class="activity-time">{{ log.created_at|date:"M j, Y g:i A" }}</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty-state">No activity logs</p>
+                {% endif %}
+            </div>
+    </aside>
+</div>
+
+<!-- Report Detail Modal -->
+<div id="report-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content modal-content--report">
+        <div class="modal-header">
+            <h2 id="modal-report-title"></h2>
+            <button class="modal-close" onclick="closeReportModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="report-detail-item">
+                <strong>Category:</strong>
+                <span id="modal-report-category"></span>
+            </div>
+            <div class="report-detail-item">
+                <strong>Submitted by:</strong>
+                <span id="modal-report-submitter"></span>
+            </div>
+            <div class="report-detail-item">
+                <strong>Submitted on:</strong>
+                <span id="modal-report-date"></span>
+            </div>
+            <div class="report-detail-item report-detail-item--full">
+                <strong>Description:</strong>
+                <p id="modal-report-description"></p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <form method="post" id="resolve-form" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="report_id" id="resolve-report-id">
+                <input type="hidden" name="action" value="resolved">
+                <button type="submit" class="btn-resolve">Resolved</button>
+            </form>
+            <button type="button" class="btn-close" onclick="closeReportModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-log-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.reports-section, .activity-log-section {
+    background: #171A21;
+    border-radius: 16px;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.section-header h2 {
+    margin: 0 0 0.5rem;
+    font-size: 24px;
+    color: white;
+}
+
+.section-header p {
+    margin: 0;
+    color: #9CA3AF;
+    font-size: 14px;
+}
+
+.search-container {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: #0d111c;
+    border: 1px solid #283149;
+    border-radius: 12px;
+    color: #f9fbff;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #5b8cff;
+}
+
+.search-input::placeholder {
+    color: #8895b6;
+}
+
+.search-input--date {
+    cursor: pointer;
+}
+
+.search-input--date::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.7;
+    filter: invert(1) brightness(1.2);
+}
+
+.search-input--date::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+.scrollable-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 600px;
+}
+
+.report-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.report-card.hidden {
+    display: none;
+}
+
+.report-card {
+    background: #11131a;
+    border: 1px solid #1f212a;
+    border-radius: 12px;
+    padding: 0.75rem 1.25rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    height: auto;
+    min-height: 50px;
+}
+
+.report-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(91, 140, 255, 0.2);
+}
+
+.report-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.report-card__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.report-card__category {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(91, 140, 255, 0.15);
+    color: #5B8CFF;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.report-card__date {
+    margin: 0;
+    font-size: 13px;
+    color: #9CA3AF;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.activity-log {
+    margin-top: 0;
+}
+
+.activity-item.hidden {
+    display: none;
+}
+
+.activity-item {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-description {
+    margin: 0 0 0.5rem;
+    color: white;
+    font-size: 14px;
+}
+
+.activity-time {
+    margin: 0;
+    color: #9CA3AF;
+    font-size: 12px;
+}
+
+.empty-state {
+    text-align: center;
+    color: #9CA3AF;
+    padding: 2rem;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+
+.modal-content--report {
+    background: #171A21;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: white;
+    font-size: 20px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #9CA3AF;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: white;
+}
+
+.modal-body {
+    padding: 1.5rem 2rem;
+}
+
+.report-detail-item {
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.report-detail-item strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #9CA3AF;
+    font-size: 13px;
+}
+
+.report-detail-item--full {
+    margin-top: 1.5rem;
+}
+
+.report-detail-item--full p {
+    margin: 0.5rem 0 0;
+    color: white;
+    line-height: 1.6;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    justify-content: flex-end;
+}
+
+.btn-resolve {
+    background: linear-gradient(135deg, #5B8CFF 0%, #4A7AFF 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-resolve:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(91, 140, 255, 0.2);
+}
+
+.btn-close {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-close:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+    color: white;
+}
+
+@media (max-width: 1024px) {
+    .admin-log-layout {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+function openReportModal(id, title, category, description, submitter, date) {
+    document.getElementById('modal-report-title').textContent = title;
+    document.getElementById('modal-report-category').textContent = category;
+    document.getElementById('modal-report-description').textContent = description;
+    document.getElementById('modal-report-submitter').textContent = submitter;
+    document.getElementById('modal-report-date').textContent = date;
+    document.getElementById('resolve-report-id').value = id;
+    document.getElementById('report-modal').style.display = 'flex';
+}
+
+function closeReportModal() {
+    document.getElementById('report-modal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+document.getElementById('report-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeReportModal();
+    }
+});
+
+// Report search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const reportSearch = document.getElementById('report-search');
+    const reportCards = document.querySelectorAll('.report-card');
+    
+    if (reportSearch) {
+        reportSearch.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            
+            reportCards.forEach(function(card) {
+                const title = card.getAttribute('data-title') || '';
+                if (title.includes(searchTerm)) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+            
+            // Show/hide empty state
+            const visibleCards = Array.from(reportCards).filter(card => !card.classList.contains('hidden'));
+            const emptyState = document.querySelector('#report-cards-container .empty-state');
+            if (emptyState) {
+                if (visibleCards.length === 0 && searchTerm !== '') {
+                    emptyState.textContent = 'No reports found matching your search';
+                    emptyState.style.display = 'block';
+                } else if (visibleCards.length === 0) {
+                    emptyState.textContent = 'No open reports';
+                    emptyState.style.display = 'block';
+                } else {
+                    emptyState.style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    // Activity log date filter
+    const logDateSearch = document.getElementById('log-date-search');
+    const activityItems = document.querySelectorAll('.activity-item');
+    
+    if (logDateSearch) {
+        logDateSearch.addEventListener('change', function(e) {
+            const selectedDate = e.target.value;
+            
+            activityItems.forEach(function(item) {
+                const itemDate = item.getAttribute('data-date') || '';
+                if (selectedDate === '' || itemDate === selectedDate) {
+                    item.classList.remove('hidden');
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+            
+            // Show/hide empty state
+            const visibleItems = Array.from(activityItems).filter(item => !item.classList.contains('hidden'));
+            const emptyState = document.querySelector('#activity-log-container .empty-state');
+            if (emptyState) {
+                if (visibleItems.length === 0 && selectedDate !== '') {
+                    emptyState.textContent = 'No activities found for this date';
+                    emptyState.style.display = 'block';
+                } else if (visibleItems.length === 0) {
+                    emptyState.textContent = 'No activity logs';
+                    emptyState.style.display = 'block';
+                } else {
+                    emptyState.style.display = 'none';
+                }
+            }
+        });
+        
+        // Clear filter on empty date
+        logDateSearch.addEventListener('input', function(e) {
+            if (e.target.value === '') {
+                activityItems.forEach(function(item) {
+                    item.classList.remove('hidden');
+                });
+                const emptyState = document.querySelector('#activity-log-container .empty-state');
+                if (emptyState && activityItems.length === 0) {
+                    emptyState.textContent = 'No activity logs';
+                    emptyState.style.display = 'block';
+                } else if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

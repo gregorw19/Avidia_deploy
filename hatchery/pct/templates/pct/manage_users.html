@@ -1,0 +1,653 @@
+{% extends "pct/admin_profile.html" %}
+
+{% block content %}
+<div class="manage-users-container">
+  <div class="page-header">
+    <h1>Manage Users</h1>
+    <div class="filter-buttons">
+      <a href="?filter_role=all" class="filter-btn {% if filter_role == 'all' %}active{% endif %}">All Users</a>
+      <a href="?filter_role=staff" class="filter-btn {% if filter_role == 'staff' %}active{% endif %}">Staff</a>
+      <a href="?filter_role=student" class="filter-btn {% if filter_role == 'student' %}active{% endif %}">Students</a>
+      <a href="?filter_role=team_member" class="filter-btn {% if filter_role == 'team_member' %}active{% endif %}">Team Members</a>
+    </div>
+  </div>
+
+  {% if users %}
+  <div class="users-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Team Lead</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ user.username }}</td>
+          <td>{{ user.profile.get_email|default:user.email }}</td>
+          <td>{{ user.profile.get_full_name }}</td>
+          <td>
+            <form method="POST" class="role-form">
+              {% csrf_token %}
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <select name="role" onchange="this.form.submit()">
+                <option value="student" {% if user.profile.role == 'student' %}selected{% endif %}>Student</option>
+                <option value="team_member" {% if user.profile.role == 'team_member' %}selected{% endif %}>Team Member</option>
+                <option value="staff" {% if user.profile.role == 'staff' %}selected{% endif %}>Staff</option>
+                <option value="admin" {% if user.profile.role == 'admin' %}selected{% endif %}>Admin</option>
+              </select>
+            </form>
+          </td>
+          <td>
+            <form method="POST" class="role-form">
+              {% csrf_token %}
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <input type="hidden" name="toggle_team_lead" value="true">
+              <input type="hidden" name="is_team_lead" value="{% if user.profile.is_team_lead %}1{% else %}0{% endif %}">
+              <label class="switch">
+                <input type="checkbox" {% if user.profile.is_team_lead %}checked{% endif %} onchange="this.form.is_team_lead.value = this.checked ? '1' : '0'; this.form.submit();" {% if user.profile.role != 'team_member' and user.profile.role != 'student' %}disabled{% endif %}>
+                <span class="slider"></span>
+              </label>
+            </form>
+          </td>
+          <td>
+            {% if user.profile.is_currently_banned %}
+              <span class="ban-status banned">Banned</span>
+              {% if user.profile.ban_type == 'temporary' and user.profile.ban_expires_at %}
+                <br><small style="color: #888;">Until {{ user.profile.ban_expires_at|date:"M d, Y H:i" }}</small>
+              {% elif user.profile.ban_type == 'permanent' %}
+                <br><small style="color: #888;">Permanent</small>
+              {% endif %}
+            {% else %}
+              <span class="ban-status active">Active</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="action-buttons">
+                {% if user.profile.is_currently_banned %}
+                  <form method="POST" style="display:inline;" action="{% url 'manage_users' %}" class="unban-user-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <input type="hidden" name="unban_user" value="true">
+                    <button type="submit" class="ban-btn" style="background-color: #2e7d32;">Unban</button>
+                  </form>
+                {% else %}
+                  <button type="button" class="ban-btn" onclick="openBanModal({{ user.id }}, '{{ user.username|escapejs }}', false)">Ban</button>
+                {% endif %}
+              <form method="POST" style="display:inline;" class="delete-user-form">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <input type="hidden" name="delete_user" value="true">
+                <button type="submit" class="delete-btn">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="no-users">
+    <p>No users found.</p>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.manage-users-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.page-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-btn {
+  padding: 10px 20px;
+  background-color: #171A21;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+  border: 2px solid transparent;
+}
+
+.filter-btn:hover {
+  background-color: #2a2d34;
+}
+
+.filter-btn.active {
+  background-color: #5B8CFF;
+  border-color: #5B8CFF;
+}
+
+.users-table {
+  background-color: #171A21;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background-color: #1a1d24;
+}
+
+th {
+  padding: 15px;
+  text-align: left;
+  color: white;
+  font-weight: 600;
+  border-bottom: 2px solid #2a2d34;
+}
+
+td {
+  padding: 15px;
+  color: #ccc;
+  border-bottom: 1px solid #2a2d34;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover {
+  background-color: #1f2329;
+}
+
+select {
+  background-color: #2a2d34;
+  color: white;
+  border: 1px solid #3a3d44;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+select:focus {
+  outline: none;
+  border-color: #5B8CFF;
+}
+
+.delete-btn {
+  padding: 8px 16px;
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.delete-btn:hover {
+  background-color: #c62828;
+}
+
+.no-users {
+  text-align: center;
+  padding: 60px 20px;
+  background-color: #171A21;
+  border-radius: 12px;
+  color: #ccc;
+  font-size: 18px;
+}
+
+.role-form {
+  margin: 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ban-btn {
+  padding: 8px 16px;
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.ban-btn:hover {
+  background-color: #f57c00;
+}
+
+.ban-status {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.ban-status.banned {
+  background-color: #d32f2f;
+  color: white;
+}
+
+.ban-status.active {
+  background-color: #2e7d32;
+  color: white;
+}
+
+/* Ban Modal Styles */
+.ban-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  overflow: auto;
+}
+
+.ban-modal-content {
+  background-color: #171A21;
+  margin: 10% auto;
+  padding: 30px;
+  border: 2px solid #2a2d34;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  color: white;
+}
+
+.ban-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.ban-modal-header h2 {
+  margin: 0;
+  color: white;
+  font-size: 24px;
+}
+
+.close-ban-modal {
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-ban-modal:hover {
+  color: white;
+}
+
+.ban-form-group {
+  margin-bottom: 20px;
+}
+
+.ban-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #ccc;
+  font-weight: 600;
+}
+
+.ban-form-group input[type="radio"] {
+  margin-right: 8px;
+  margin-left: 0;
+}
+
+.ban-radio-group {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.ban-radio-option {
+  display: flex;
+  align-items: center;
+}
+
+.ban-radio-option label {
+  margin: 0;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.ban-duration-group {
+  display: none;
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #1a1d24;
+  border-radius: 6px;
+}
+
+.ban-duration-group.active {
+  display: block;
+}
+
+.ban-duration-inputs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.ban-duration-inputs input[type="number"] {
+  flex: 1;
+  padding: 10px;
+  background-color: #2a2d34;
+  color: white;
+  border: 1px solid #3a3d44;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.ban-duration-inputs select {
+  padding: 10px;
+  background-color: #2a2d34;
+  color: white;
+  border: 1px solid #3a3d44;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ban-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 25px;
+}
+
+.ban-modal-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+.switch input { display:none; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #3a3d44;
+  transition: .2s;
+  border-radius: 24px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: #5B8CFF;
+}
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.ban-submit-btn {
+  background-color: #ff9800;
+  color: white;
+}
+
+.ban-submit-btn:hover {
+  background-color: #f57c00;
+}
+
+.ban-cancel-btn {
+  background-color: #2a2d34;
+  color: white;
+}
+
+.ban-cancel-btn:hover {
+  background-color: #3a3d44;
+}
+</style>
+
+<!-- Ban Modal -->
+<div id="banModal" class="ban-modal">
+  <div class="ban-modal-content">
+    <div class="ban-modal-header">
+      <h2 id="banModalTitle">Ban User</h2>
+      <button class="close-ban-modal" onclick="closeBanModal()">&times;</button>
+    </div>
+    <form id="banForm" method="POST" action="{% url 'manage_users' %}">
+      {% csrf_token %}
+      <input type="hidden" name="user_id" id="banUserId">
+      <input type="hidden" name="ban_user" value="true">
+      
+      <div class="ban-form-group">
+        <label>Ban Type:</label>
+        <div class="ban-radio-group">
+          <div class="ban-radio-option">
+            <input type="radio" id="banTypeTemporary" name="ban_type" value="temporary" onchange="toggleDurationInput()">
+            <label for="banTypeTemporary">Temporary</label>
+          </div>
+          <div class="ban-radio-option">
+            <input type="radio" id="banTypePermanent" name="ban_type" value="permanent" onchange="toggleDurationInput()">
+            <label for="banTypePermanent">Permanent</label>
+          </div>
+        </div>
+      </div>
+      
+      <div id="banDurationGroup" class="ban-duration-group">
+        <label>Duration:</label>
+        <div class="ban-duration-inputs">
+          <input type="number" id="banDuration" name="ban_duration" min="1" value="1" placeholder="1">
+          <select id="banDurationUnit" name="ban_duration_unit">
+            <option value="hours">Hour(s)</option>
+            <option value="days">Day(s)</option>
+            <option value="months">Month(s)</option>
+            <option value="years">Year(s)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="ban-form-group">
+        <label for="banReason">Reason (optional):</label>
+        <textarea id="banReason" name="ban_reason" rows="3" style="width: 100%; padding: 10px; background-color: #2a2d34; color: white; border: 1px solid #3a3d44; border-radius: 6px; font-family: inherit; resize: vertical;"></textarea>
+      </div>
+      
+      <div class="ban-modal-actions">
+        <button type="button" class="ban-cancel-btn" onclick="closeBanModal()">Cancel</button>
+        <button type="submit" class="ban-submit-btn" id="banSubmitBtn">Ban User</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+let currentBanUserId = null;
+let isUnbanning = false;
+
+function openBanModal(userId, username, isBanned) {
+  currentBanUserId = userId;
+  isUnbanning = isBanned;
+  const modal = document.getElementById('banModal');
+  const title = document.getElementById('banModalTitle');
+  const submitBtn = document.getElementById('banSubmitBtn');
+  const form = document.getElementById('banForm');
+  
+  document.getElementById('banUserId').value = userId;
+  
+  if (isBanned) {
+    title.textContent = 'Unban User';
+    submitBtn.textContent = 'Unban User';
+    submitBtn.style.backgroundColor = '#2e7d32';
+    submitBtn.onmouseover = function() { this.style.backgroundColor = '#1b5e20'; };
+    submitBtn.onmouseout = function() { this.style.backgroundColor = '#2e7d32'; };
+    form.querySelectorAll('input[type="radio"], input[type="number"], select, textarea').forEach(el => {
+      el.disabled = true;
+      el.style.opacity = '0.5';
+    });
+    document.getElementById('banDurationGroup').style.display = 'none';
+  } else {
+    title.textContent = 'Ban User: ' + username;
+    submitBtn.textContent = 'Ban User';
+    submitBtn.style.backgroundColor = '#ff9800';
+    submitBtn.onmouseover = function() { this.style.backgroundColor = '#f57c00'; };
+    submitBtn.onmouseout = function() { this.style.backgroundColor = '#ff9800'; };
+    form.querySelectorAll('input[type="radio"], input[type="number"], select, textarea').forEach(el => {
+      el.disabled = false;
+      el.style.opacity = '1';
+    });
+    // Ensure ban_user input exists (restore if it was removed)
+    let banUserInput = form.querySelector('input[name="ban_user"]');
+    if (!banUserInput) {
+      banUserInput = document.createElement('input');
+      banUserInput.type = 'hidden';
+      banUserInput.name = 'ban_user';
+      banUserInput.value = 'true';
+      form.insertBefore(banUserInput, form.firstChild.nextSibling);
+    }
+    // Remove unban_user input if it exists
+    const unbanUserInput = form.querySelector('input[name="unban_user"]');
+    if (unbanUserInput) {
+      unbanUserInput.remove();
+    }
+    // Reset form
+    form.reset();
+    document.getElementById('banUserId').value = userId;
+    // Restore ban_user value after reset
+    banUserInput = form.querySelector('input[name="ban_user"]');
+    if (banUserInput) {
+      banUserInput.value = 'true';
+    }
+    document.getElementById('banDurationGroup').classList.remove('active');
+  }
+  
+  modal.style.display = 'block';
+}
+
+function closeBanModal() {
+  document.getElementById('banModal').style.display = 'none';
+  currentBanUserId = null;
+  isUnbanning = false;
+}
+
+function toggleDurationInput() {
+  const durationGroup = document.getElementById('banDurationGroup');
+  const temporaryRadio = document.getElementById('banTypeTemporary');
+  
+  if (temporaryRadio.checked) {
+    durationGroup.classList.add('active');
+  } else {
+    durationGroup.classList.remove('active');
+  }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('banModal');
+  if (event.target == modal) {
+    closeBanModal();
+  }
+}
+
+// Handle ban form submission
+document.getElementById('banForm').addEventListener('submit', function(e) {
+  if (isUnbanning) {
+    // For unban, remove ban_user input and add unban_user flag
+    const form = this;
+    const banUserInput = form.querySelector('input[name="ban_user"]');
+    if (banUserInput) {
+      banUserInput.remove();
+    }
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'unban_user';
+    input.value = 'true';
+    form.appendChild(input);
+    return; // Let form submit normally
+  }
+  
+  // For ban, validate that ban_type is selected
+  const banType = document.querySelector('input[name="ban_type"]:checked');
+  if (!banType) {
+    e.preventDefault();
+    alert('Please select a ban type (Temporary or Permanent).');
+    return;
+  }
+  
+  // If temporary, validate duration
+  if (banType.value === 'temporary') {
+    const duration = document.getElementById('banDuration').value;
+    if (!duration || parseInt(duration) < 1) {
+      e.preventDefault();
+      alert('Please enter a valid duration (at least 1).');
+      return;
+    }
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Attach confirm handlers to delete forms
+  document.querySelectorAll('.delete-user-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const form = this;
+      showConfirm('Are you sure you want to delete this user?', 'Delete User', 'warning')
+        .then((confirmed) => {
+          if (confirmed) {
+            form.submit();
+          }
+        });
+    });
+  });
+});
+</script>
+{% endblock %}

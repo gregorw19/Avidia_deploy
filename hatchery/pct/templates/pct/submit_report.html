@@ -1,0 +1,381 @@
+{% extends "pct/base.html" %}
+{% load static %}
+
+{% block title %}Submit Report | The Hatchery{% endblock %}
+{% block body_class %} home-page{% endblock %}
+{% block main_class %} home-main{% endblock %}
+
+{% block nav %}
+    {% include 'pct/partials/navbar.html' %}
+{% endblock %}
+
+{% block header %}
+<div>Submit a Report</div>
+{% endblock %}
+
+{% block content %}
+<div class="reservations-layout">
+    <section class="reservation-panel">
+        <header class="reservation-panel__header">
+            <div>
+                <h2>Report an Issue</h2>
+                <p>Help us improve by reporting issues or concerns.</p>
+            </div>
+        </header>
+        <form method="post" class="room-reservation-form">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="form-alert form-alert--error">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="form-body">
+                <div class="form-field form-field--full">
+                    <label class="floating-label" for="{{ form.title.id_for_label }}">
+                        <span>Title</span>
+                        <div class="input-shell">
+                            {{ form.title }}
+                        </div>
+                    </label>
+                    {% for error in form.title.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="form-field form-field--full">
+                    <label class="floating-label" for="{{ form.category.id_for_label }}">
+                        <span>Category</span>
+                        <div class="input-shell input-shell--select">
+                            {{ form.category }}
+                        </div>
+                    </label>
+                    {% for error in form.category.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="form-field form-field--full">
+                    <label class="floating-label" for="{{ form.description.id_for_label }}">
+                        <span>Description</span>
+                        <div class="input-shell">
+                            {{ form.description }}
+                        </div>
+                    </label>
+                    {% for error in form.description.errors %}
+                        <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-actions">
+                <p class="form-actions__note">Your report will be reviewed by administrators. Expect a reply within 1 business day.</p>
+                <button type="submit" class="primary-btn">Submit Report</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="reservation-panel" style="margin-bottom: 3rem;">
+        <header class="reservation-panel__header">
+            <div>
+                <h2>My Reports</h2>
+                <p>Track the status of your submitted reports.</p>
+            </div>
+        </header>
+        <div class="room-reservation-cards">
+            {% if my_reports %}
+                {% for report in my_reports %}
+                    <article class="room-reservation-card">
+                        <div class="room-reservation-card__header">
+                            <p class="reservation-card__title">{{ report.title }}</p>
+                            <span class="status-badge status-badge--{{ report.status }}">{{ report.get_status_display }}</span>
+                        </div>
+                        <p class="reservation-card__date">{{ report.created_at|date:"l, F j, Y" }}</p>
+                        <p class="reservation-card__meta">Category: {{ report.get_category_display }}</p>
+                        <p class="reservation-card__meta">{{ report.description|truncatewords:20 }}</p>
+                        {% if report.status == 'resolved' and report.resolved_by %}
+                            <p class="reservation-card__meta">Resolved by {{ report.resolved_by.get_full_name }}</p>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p class="reservation-empty">You haven't submitted any reports yet.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_body %}
+{{ block.super }}
+<style>
+.reservations-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.reservation-panel {
+    background: radial-gradient(circle at top left, rgba(92, 115, 255, 0.12), transparent 55%), #11131a;
+    border: 1px solid #1f2433;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 25px 60px rgba(5, 6, 12, 0.55);
+}
+
+.reservation-panel__header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.reservation-panel__header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #f7f9ff;
+}
+
+.reservation-panel__header p {
+    color: #aab0c6;
+    margin-top: 0.25rem;
+}
+
+.reservation-highlights {
+    list-style: none;
+    display: flex;
+    gap: 0.75rem;
+    padding: 0;
+    margin: 0;
+}
+
+.reservation-highlights li {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    color: #dfe3ff;
+}
+
+.room-reservation-form {
+    margin-top: 1.75rem;
+    background: #0d111c;
+    border: 1px solid #1f2433;
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-alert {
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+}
+
+.form-alert--error {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.35);
+    color: #ff9e9e;
+}
+
+.form-body {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.form-field--full {
+    grid-column: 1 / -1;
+}
+
+.floating-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-weight: 600;
+    color: #e2e8ff;
+}
+
+.input-shell {
+    border: 1px solid #283149;
+    border-radius: 12px;
+    padding: 0.6rem 0.9rem;
+    background: rgba(19, 26, 42, 0.85);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    display: flex;
+    align-items: center;
+}
+
+.input-shell--select select {
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, #8fa2ff 50%), linear-gradient(135deg, #8fa2ff 50%, transparent 50%);
+    background-position: calc(100% - 15px) center, calc(100% - 10px) center;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+}
+
+.room-reservation-form select,
+.room-reservation-form input,
+.room-reservation-form textarea {
+    background: transparent;
+    border: none;
+    color: #f9fbff;
+    width: 100%;
+    font-size: 1rem;
+    padding: 0;
+}
+
+.room-reservation-form select {
+    background-color: rgba(19, 26, 42, 0.85);
+}
+
+.room-reservation-form select option {
+    background-color: #0d111c;
+    color: #f7f9ff;
+}
+
+.room-reservation-form textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.room-reservation-form select:focus,
+.room-reservation-form input:focus,
+.room-reservation-form textarea:focus {
+    outline: none;
+}
+
+.field-error {
+    color: #ff9e9e;
+    font-size: 0.85rem;
+    margin-top: 0.35rem;
+}
+
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.form-actions__note {
+    margin: 0;
+    color: #9ba8c9;
+    font-size: 0.95rem;
+}
+
+.primary-btn {
+    align-self: flex-start;
+    background: linear-gradient(120deg, #6b8cff, #8a68ff);
+    border: none;
+    border-radius: 999px;
+    color: #fff;
+    padding: 0.75rem 1.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 15px 30px rgba(104, 119, 255, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.primary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 20px 35px rgba(104, 119, 255, 0.45);
+}
+
+.room-reservation-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.room-reservation-card {
+    background: #11131a;
+    border: 1px solid #1f212a;
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 15px 30px rgba(7, 8, 14, 0.45);
+    color: #eef1ff;
+}
+
+.room-reservation-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.reservation-card__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f7f9ff;
+}
+
+.reservation-card__date {
+    margin: 0.75rem 0 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #aab0c6;
+}
+
+.reservation-card__meta {
+    margin: 0.35rem 0;
+    font-size: 0.9rem;
+    color: #c5cfe0;
+}
+
+.status-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge--open {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+}
+
+.status-badge--resolved {
+    background: rgba(102, 187, 106, 0.15);
+    color: #66bb6a;
+}
+
+.status-badge--closed {
+    background: rgba(158, 158, 158, 0.15);
+    color: #9e9e9e;
+}
+
+.reservation-empty {
+    margin-top: 1rem;
+    color: #aab0c6;
+    text-align: center;
+    padding: 2rem;
+    border: 1px dashed rgba(148, 163, 184, 0.3);
+    border-radius: 12px;
+}
+
+@media (max-width: 640px) {
+    .reservation-panel {
+        padding: 1.5rem;
+    }
+
+    .reservation-highlights {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .primary-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}
+

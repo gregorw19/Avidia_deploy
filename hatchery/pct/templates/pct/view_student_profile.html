@@ -1,0 +1,377 @@
+{% extends "pct/base_profile.html" %}
+
+{% block content %}
+<div class="view-profile-container">
+  <div class="profile-header">
+    <a href="{% url 'add_certifications' %}" class="back-button">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 4L6 10L12 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Back to Certifications
+    </a>
+    <h1>Student Profile</h1>
+  </div>
+
+  <div class="profile-content">
+    <div class="profile-picture-section">
+      <div class="profile-picture">
+        {% if student_profile.profile_picture %}
+          <img src="{{ student_profile.profile_picture.url }}" alt="Profile Picture">
+        {% else %}
+          <div class="profile-picture-placeholder">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="profile-details">
+      <div class="detail-section">
+        <h2 class="section-title">Personal Information</h2>
+        
+        <div class="detail-row">
+          <span class="detail-label">Name:</span>
+          <span class="detail-value">{{ student_profile.get_full_name }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Username:</span>
+          <span class="detail-value">{{ student_user.username }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Email:</span>
+          <span class="detail-value">{{ student_profile.get_email|default:"Not set" }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Role:</span>
+          <span class="detail-value">{{ student_profile.role|title|default:"Student" }}</span>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h2 class="section-title">Academic Information</h2>
+        
+        <div class="detail-row">
+          <span class="detail-label">Majors:</span>
+          <span class="detail-value">
+            {% if student_profile.major1 or student_profile.major2 %}
+              {% if student_profile.major1 %}{{ student_profile.major1 }}{% endif %}{% if student_profile.major1 and student_profile.major2 %}, {% endif %}{% if student_profile.major2 %}{{ student_profile.major2 }}{% endif %}
+            {% else %}
+              Not specified
+            {% endif %}
+          </span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Minors:</span>
+          <span class="detail-value">
+            {% if student_profile.minor1 or student_profile.minor2 %}
+              {% if student_profile.minor1 %}{{ student_profile.minor1 }}{% endif %}{% if student_profile.minor1 and student_profile.minor2 %}, {% endif %}{% if student_profile.minor2 %}{{ student_profile.minor2 }}{% endif %}
+            {% else %}
+              Not specified
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h2 class="section-title">Certifications</h2>
+        {% if student_profile.certificates.all %}
+          <div class="certifications-list">
+            {% for cert in student_profile.certificates.all %}
+              <div class="cert-badge">
+                <div class="cert-icon" style="display: flex; align-items: center; gap: 0.5rem;">
+                  {% if cert.type.icon and "fa-" in cert.type.icon %}
+                    <i class="{{ cert.type.icon }}" style="font-size: 20px;"></i>
+                  {% elif cert.type.icon %}
+                    <span style="font-size: 20px;">{{ cert.type.icon }}</span>
+                  {% else %}
+                    <i class="fa-solid fa-certificate" style="font-size: 20px;"></i>
+                  {% endif %}
+                  <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                    <span class="cert-name">{{ cert.type.name }}</span>
+                    <span class="cert-level">Level {{ cert.level.level }}</span>
+                  </div>
+                </div>
+                <button type="button" class="remove-cert-btn" data-user-id="{{ student_user.id }}" data-cert-id="{{ cert.id }}" title="Remove certification">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="no-certifications">
+            <span class="detail-value">No certifications assigned yet</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.view-profile-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.profile-header {
+  margin-bottom: 2rem;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #5c73ff;
+  text-decoration: none;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  transition: color 0.2s;
+}
+
+.back-button:hover {
+  color: #4a63ff;
+}
+
+.profile-header h1 {
+  color: white;
+  font-size: 2rem;
+  margin: 0;
+}
+
+.profile-content {
+  background-color: #171A21;
+  border-radius: 12px;
+  padding: 2rem;
+  display: flex;
+  gap: 2rem;
+}
+
+.profile-picture-section {
+  flex-shrink: 0;
+}
+
+.profile-picture {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #2a2d34;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #3a3d44;
+}
+
+.profile-picture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-picture-placeholder {
+  color: #888;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.detail-section {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #2a2d34;
+}
+
+.detail-section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #888;
+  min-width: 120px;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  color: white;
+  flex: 1;
+}
+
+.certifications-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cert-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0.75rem 3rem 0.75rem 1.25rem; /* Extra padding on right for delete button */
+  border-radius: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  position: relative;
+}
+
+.cert-badge .cert-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.cert-name {
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.cert-level {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+}
+
+.remove-cert-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.remove-cert-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.no-certifications {
+  color: #888;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .profile-content {
+    flex-direction: column;
+  }
+
+  .profile-picture {
+    align-self: center;
+  }
+}
+</style>
+
+<script>
+const REMOVE_CERT_URL = '{% url "remove_certification_api" student_user.id 999 %}';
+
+// showAlert and showConfirm are defined in base_profile.html
+
+// Attach event listeners to remove buttons
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.remove-cert-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const userId = parseInt(this.getAttribute('data-user-id'));
+      const certId = parseInt(this.getAttribute('data-cert-id'));
+      removeCertification(userId, certId, this);
+    });
+  });
+});
+
+function removeCertification(userId, certId, button) {
+  showConfirm('Are you sure you want to remove this certification from the student?', 'Remove Certification', 'warning')
+    .then((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+  
+  const url = REMOVE_CERT_URL.replace('999', certId);
+  const csrfToken = '{{ csrf_token }}';
+  
+  button.disabled = true;
+  button.style.opacity = '0.5';
+  
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Remove the badge from DOM
+      button.closest('.cert-badge').style.transition = 'opacity 0.3s';
+      button.closest('.cert-badge').style.opacity = '0';
+      setTimeout(() => {
+        button.closest('.cert-badge').remove();
+        // Check if no certs left
+        const certsList = document.querySelector('.certifications-list');
+        if (certsList && certsList.children.length === 0) {
+          certsList.innerHTML = '<div class="no-certifications"><span class="detail-value">No certifications assigned yet</span></div>';
+        }
+      }, 300);
+      showAlert(data.message || 'Certification removed successfully', 'Success', 'success');
+    } else {
+      showAlert(data.error || 'Failed to remove certification', 'Error', 'error');
+      button.disabled = false;
+      button.style.opacity = '1';
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('An error occurred while removing the certification', 'Error', 'error');
+    button.disabled = false;
+    button.style.opacity = '1';
+  });
+    });
+}
+</script>
+
+{% endblock %}

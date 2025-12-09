@@ -1,0 +1,110 @@
+{% extends "pct/base_profile.html" %}
+
+{% block content %}
+<div class="home-container">
+  <h1>Welcome to The Hatchery Portal</h1>
+  <div class="home-cards">
+    <div class="home-card">
+      <h2>Reservations</h2>
+      <p>View and manage your equipment reservations</p>
+      <a href="#" class="card-btn">Coming Soon</a>
+    </div>
+    
+    <div class="home-card">
+      <h2>Training</h2>
+      <p>Access training materials and schedules</p>
+      <a href="#" class="card-btn">Coming Soon</a>
+    </div>
+    
+    {% if user.profile.role == 'admin' or user.profile.role == 'staff' %}
+    <div class="home-card">
+      <h2>Manage Users</h2>
+      <p>View and manage user accounts and profiles</p>
+      <a href="{% url 'manage_users' %}" class="card-btn">Manage Users</a>
+    </div>
+    {% endif %}
+    
+    {% if user.profile.role == 'admin' %}
+    <div class="home-card">
+      <h2>Admin Tools</h2>
+      <p>System administration and settings</p>
+      <a href="#" class="card-btn">Coming Soon</a>
+    </div>
+    {% endif %}
+    {% for entry in invited_trainings %}
+    <div class="alert alert-info">
+      You’ve been invited to join {{ entry.training.name }}!
+      <form method="post" action="{% url 'respond_invitation' entry.id %}">
+        {% csrf_token %}
+        <button name="response" value="accept" class="btn btn-success">Accept</button>
+        <button name="response" value="decline" class="btn btn-danger">Decline</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+.home-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.home-container h1 {
+  text-align: center;
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  color: white;
+}
+
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  margin-top: 30px;
+}
+
+.home-card {
+  background-color: #171A21;
+  border-radius: 12px;
+  padding: 30px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.home-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(91, 140, 255, 0.2);
+}
+
+.home-card h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: white;
+}
+
+.home-card p {
+  color: #ccc;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.card-btn {
+  display: inline-block;
+  padding: 12px 24px;
+  background-color: #5B8CFF;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.card-btn:hover {
+  background-color: #4a7ddb;
+}
+</style>
+{% endblock %}
+

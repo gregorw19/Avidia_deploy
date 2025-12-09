@@ -1,0 +1,88 @@
+{% extends "pct/base.html" %}
+
+{% block title %}Contact | The Hatchery{% endblock %}
+{% block body_class %} contact-page{% endblock %}
+{% block main_class %} contact-main{% endblock %}
+
+{% block nav %}
+    <div class="header-links" style="padding: 20px;">
+        {% if request.user.is_authenticated %}
+            <a href="{% url 'home' %}" style="color: white; font-size: 1.5rem; text-decoration: none; background-color:#1a1d23;border-radius: 20px;padding: 10px 20px;">← Back to Homepage</a>
+        {% else %}
+            <a href="{% url 'login' %}" style="color: white; font-size: 1.5rem; text-decoration: none;background-color:#1a1d23;border-radius: 20px;padding: 10px 20px;">← Back to Login</a>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block content %}
+
+<div class="contact-container">
+    <h1 class="contact-title">Contact Us</h1>
+
+    <div class="contact-card">
+        <p class="contact-text">
+            If you have any further questions or would like to get in touch with a team member, 
+            please drop by <strong>245 Beacon St</strong> during open hours.
+        </p>
+
+        <h3 class="contact-subtitle">Location</h3>
+
+        <p class="contact-text">
+            <strong>
+            Room 203 & Room 301<br>
+            245 Beacon Street<br>
+            Chestnut Hill, MA 02467
+            </strong>
+        </p>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: #000;
+        margin: 0;
+        color: #e0e0e0;
+    }
+
+    .contact-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 40px;
+        text-align: center;
+    }
+
+    .contact-title {
+        font-size: 2.6rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 30px;
+    }
+
+    .contact-card {
+        background-color: #1a1d23;
+        width: 85%;
+        max-width: 900px;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 0 25px rgba(0, 0, 0, 0.35);
+        text-align: left;
+    }
+
+    .contact-subtitle {
+        font-size: 1.3rem;
+        color: #dcdcdc;
+        margin-top: 25px;
+        margin-bottom: 10px;
+    }
+
+    .contact-text {
+        color: #c9c9c9;
+        font-size: 1rem;
+        line-height: 1.7;
+        margin-bottom: 15px;
+    }
+</style>
+
+{% endblock %}

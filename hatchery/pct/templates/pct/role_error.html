@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Access Denied | Hatchery Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'pct/profile.css' %}">
+  <style>
+    .error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    
+    .error-icon {
+      font-size: 72px;
+      margin-bottom: 20px;
+      color: #d32f2f;
+    }
+    
+    .error-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #d32f2f;
+    }
+    
+    .error-message {
+      font-size: 18px;
+      line-height: 1.6;
+      max-width: 600px;
+      margin-bottom: 30px;
+      color: #ccc;
+    }
+    
+    .error-details {
+      background-color: #2a2a2a;
+      padding: 20px 30px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 4px solid #d32f2f;
+    }
+    
+    .error-details p {
+      margin: 10px 0;
+      color: #fff;
+    }
+    
+    .role-display {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 6px;
+      margin: 0 8px;
+      font-weight: 600;
+    }
+    
+    .role-existing {
+      background-color: #5B8CFF;
+      color: white;
+    }
+    
+    .role-attempted {
+      background-color: #d32f2f;
+      color: white;
+    }
+    
+    .btn-back {
+      display: inline-block;
+      padding: 14px 32px;
+      background-color: #5B8CFF;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      margin-top: 20px;
+      transition: background-color 0.3s;
+    }
+    
+    .btn-back:hover {
+      background-color: #4a7ddb;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav_objects">
+      <h1>Hatchery Portal</h1>
+      <div class="nav_links">
+        <a href="{% url 'login' %}">Login</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="content-wrapper">
+    <div class="error-container">
+      <div class="error-icon">⚠️</div>
+      <h1 class="error-title">Access Denied</h1>
+      
+      <div class="error-message">
+        You attempted to access this system with an incorrect role.
+      </div>
+      
+      <div class="error-details">
+        <p><strong>Your registered role:</strong> <span class="role-display role-existing">{{ existing_role|title }}</span></p>
+        <p><strong>Attempted role:</strong> <span class="role-display role-attempted">{{ attempted_role|title }}</span></p>
+      </div>
+      
+      <div class="error-message">
+        Please use the <strong>{{ existing_role|title }}</strong> sign-in button to access your account.
+      </div>
+      
+      <a href="{% url 'login' %}" class="btn-back">Return to Login</a>
+    </div>
+  </div>
+
+  {% include 'pct/footer.html' %}
+</body>
+</html>
+

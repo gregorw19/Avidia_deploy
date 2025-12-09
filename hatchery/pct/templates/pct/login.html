@@ -1,0 +1,29 @@
+{% extends "pct/base.html" %}
+{% load socialaccount %}
+
+{% block title %}Sign In | The Hatchery{% endblock %}
+{% block body_class %} login-page{% endblock %}
+{% block main_class %} login-main{% endblock %}
+{% block nav %}{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <section class="login">
+      <h1>Sign In to Your Account</h1>
+      <div class="login_options">
+        <div class="user">
+            <a href="{% url 'google_login_with_role' 'student' %}">User Sign In</a>
+        </div>
+        <div class="team-member">
+            <a href="{% url 'google_login_with_role' 'team_member' %}">Team Member Sign In</a>
+        </div>
+        <div class="staff">
+            <a href="{% url 'google_login_with_role' 'staff' %}">Staff Sign In</a>
+        </div>
+        <div class="admin">
+            <a href="{% url 'google_login_with_role' 'admin' %}">Admin Sign In</a>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}

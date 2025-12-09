@@ -1,0 +1,219 @@
+{% extends "pct/base_profile.html" %}
+
+{% block content %}
+<div class="semester-settings">
+  <div class="page-header">
+    <div>
+      <p class="page-kicker">Staff tools</p>
+      <h1>Semester & Open Hours</h1>
+      <p class="page-sub">Set the active semester, open hours, and holidays. Availability and shifts must stay inside these windows.</p>
+    </div>
+    {% if active_semester %}
+      <div class="status-chip status-chip--published">Active: {{ active_semester.name }}</div>
+    {% else %}
+      <div class="status-chip status-chip--draft">No active semester</div>
+    {% endif %}
+  </div>
+
+  <section class="card">
+    <header class="card__header">
+      <div>
+        <p class="section-kicker">Semesters</p>
+        <h2>Create or activate</h2>
+      </div>
+    </header>
+    <div class="grid-two">
+      <form method="post" class="stacked-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_semester">
+        {% include "pct/partials/form_field.html" with field=semester_form.name %}
+        {% include "pct/partials/form_field.html" with field=semester_form.start_date %}
+        {% include "pct/partials/form_field.html" with field=semester_form.end_date %}
+        <div class="form-field">
+          <label class="checkbox">
+            {{ semester_form.is_active }} <span>Set as active now</span>
+          </label>
+        </div>
+        <button type="submit" class="btn-primary">Save semester</button>
+      </form>
+      <div>
+        <h3>Existing semesters</h3>
+        <ul class="list">
+          {% for semester in semesters %}
+          <li class="list__item">
+            <div>
+              <strong>{{ semester.name }}</strong>
+              <div class="muted">{{ semester.start_date }} → {{ semester.end_date }}</div>
+            </div>
+            <div class="actions">
+              {% if semester.is_active %}
+              <span class="badge badge--success">Active</span>
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="unset_active">
+                <input type="hidden" name="semester_id" value="{{ semester.id }}">
+                <button type="submit" class="btn-tertiary">Set inactive</button>
+              </form>
+              {% else %}
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="set_active">
+                <input type="hidden" name="semester_id" value="{{ semester.id }}">
+                <button type="submit" class="btn-tertiary">Set active</button>
+              </form>
+              {% endif %}
+            </div>
+          </li>
+          {% empty %}
+          <li class="list__item muted">No semesters yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <header class="card__header">
+      <div>
+        <p class="section-kicker">Open hours</p>
+        <h2>Weekly schedule</h2>
+      </div>
+    </header>
+    <div class="grid-two">
+      <form method="post" class="stacked-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_open_hour">
+        {% include "pct/partials/form_field.html" with field=open_hour_form.semester %}
+        {% include "pct/partials/form_field.html" with field=open_hour_form.weekday %}
+        {% include "pct/partials/form_field.html" with field=open_hour_form.open_time %}
+        {% include "pct/partials/form_field.html" with field=open_hour_form.close_time %}
+        <button type="submit" class="btn-primary">Add hours</button>
+      </form>
+      <div>
+        <h3>Configured hours</h3>
+        <ul class="list">
+          {% for hours in open_hours %}
+          <li class="list__item">
+            <div>
+              <strong>{{ hours.semester.name }}</strong>
+              <div class="muted">{{ hours.get_weekday_display }}: {{ hours.open_time }} – {{ hours.close_time }}</div>
+            </div>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_open_hour">
+              <input type="hidden" name="open_hour_id" value="{{ hours.id }}">
+              <button type="submit" class="btn-tertiary">Delete</button>
+            </form>
+          </li>
+          {% empty %}
+          <li class="list__item muted">No open hours configured yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <header class="card__header">
+      <div>
+        <p class="section-kicker">Holidays</p>
+        <h2>Block closed days</h2>
+      </div>
+    </header>
+    <div class="grid-two">
+      <form method="post" class="stacked-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_holiday">
+        {% include "pct/partials/form_field.html" with field=holiday_form.semester %}
+        {% include "pct/partials/form_field.html" with field=holiday_form.date %}
+        {% include "pct/partials/form_field.html" with field=holiday_form.name %}
+        <button type="submit" class="btn-primary">Add holiday</button>
+      </form>
+      <div>
+        <h3>Upcoming holidays</h3>
+        <ul class="list">
+          {% for holiday in holidays %}
+          <li class="list__item">
+            <div>
+              <strong>{{ holiday.name }}</strong>
+              <div class="muted">{{ holiday.semester.name }} — {{ holiday.date }}</div>
+            </div>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_holiday">
+              <input type="hidden" name="holiday_id" value="{{ holiday.id }}">
+              <button type="submit" class="btn-tertiary">Delete</button>
+            </form>
+          </li>
+          {% empty %}
+          <li class="list__item muted">No holidays configured.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<style>
+.semester-settings { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; color-scheme: dark;
+  --surface: #11131a;
+  --surface-soft: #0d111c;
+  --border: #1f2433;
+  --muted: #9aa6c5;
+}
+.page-header { display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.page-kicker { text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; font-weight: 700; }
+.page-sub { color: var(--muted); margin: 0.15rem 0 0; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+.card__header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.section-kicker { text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; font-weight: 700; font-size: 0.85rem; }
+.grid-two { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; }
+.stacked-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.list__item { background: var(--surface-soft); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.muted { color: var(--muted); }
+.badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; background: #1c2335; color: #dbe4ff; font-size: 0.85rem; }
+.badge--success { background: rgba(66, 185, 131, 0.15); color: #75d6a3; }
+.status-chip { padding: 0.35rem 0.75rem; border-radius: 10px; font-weight: 700; }
+.status-chip--published { background: rgba(66, 185, 131, 0.15); color: #75d6a3; }
+.status-chip--draft { background: rgba(255, 193, 7, 0.2); color: #f5c84c; }
+.btn-tertiary { background: transparent; border: 1px solid #3a425c; color: #dbe4ff; border-radius: 8px; padding: 0.4rem 0.8rem; cursor: pointer; }
+.actions { display: flex; gap: 0.5rem; align-items: center; }
+.checkbox input[type="checkbox"] { margin-top: 0.2rem; }
+.semester-settings input:not([type="checkbox"]),
+.semester-settings select,
+.semester-settings textarea {
+  background: #0b1221;
+  color: #f4f7ff;
+  border: 1px solid #2d3a5c;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  width: 100%;
+  appearance: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.semester-settings input[type="date"],
+.semester-settings input[type="time"] {
+  color-scheme: dark;
+}
+.semester-settings input[type="date"]::-webkit-calendar-picker-indicator,
+.semester-settings input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.4);
+}
+.semester-settings .checkbox {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-weight: 600;
+  color: #f4f7ff;
+}
+.semester-settings .checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #5c73ff;
+  border-radius: 6px;
+  border: 1px solid #2d3a5c;
+  background: #0b1221;
+}
+</style>
+{% endblock %}

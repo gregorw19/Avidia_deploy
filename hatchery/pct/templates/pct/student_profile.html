@@ -1,0 +1,292 @@
+{% extends "pct/base_profile.html" %}
+
+{% block content %}
+<div class="profile-container">
+  <div class="greeting-section">
+    <div class="greeting">Hi, {{ profile.get_full_name }}!</div>
+
+    <div class="profile-picture-container">
+      <div class="profile-picture">
+        {% if profile.profile_picture %}
+          <img src="{{ profile.profile_picture.url }}" alt="Profile Picture">
+        {% else %}
+          <div class="profile-picture-placeholder">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          </div>
+        {% endif %}
+      </div>
+
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="profile_picture" accept="image/*" id="profile-picture-input" style="display:none;" onchange="this.form.submit()">
+        <button type="button" class="upload-btn" onclick="document.getElementById('profile-picture-input').click()">Upload a New Picture</button>
+        <input type="hidden" name="upload_picture" value="true">
+      </form>
+    </div>
+  </div>
+
+  <div class="details-section">
+    <div class="detail-row">
+      <span class="detail-label">ROLE:</span>
+      <span class="detail-value">{{ profile.role|title|default:"Student" }}</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">EMAIL:</span>
+      <div id="email-display" style="display:flex;align-items:center;gap:15px;">
+        <span class="detail-value">{{ profile.get_email|default:"Not set" }}</span>
+        <button type="button" class="edit-btn" onclick="toggleEmailEdit()">Edit</button>
+      </div>
+      <div id="email-edit" style="display:none;">
+        <form method="POST" id="email-form" style="display:flex;align-items:center;gap:10px;">
+          {% csrf_token %}
+          <input type="email" name="email" class="academic-input" value="{% if profile.email %}{{ profile.email }}{% else %}{{ user.email }}{% endif %}" placeholder="Enter email address" style="width:300px;">
+          <input type="hidden" name="update_email" value="true">
+          <button type="submit" class="save-btn" style="margin:0;">Save</button>
+          <button type="button" class="cancel-btn" onclick="toggleEmailEdit()" style="margin:0;">Cancel</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="detail-row">
+      <span class="detail-label">NAME:</span>
+      <span class="detail-value">{{ profile.get_full_name }}</span>
+    </div>
+
+    <div class="certifications-section">
+      <span class="detail-label" style="margin-bottom:20px;display:block;">ACADEMIC INFORMATION:</span>
+      
+      <div id="academic-display">
+        <div class="detail-row">
+          <span class="detail-label">MAJORS:</span>
+          <span class="detail-value">
+            {% if profile.major1 or profile.major2 %}
+              {% if profile.major1 %}{{ profile.major1 }}{% endif %}{% if profile.major1 and profile.major2 %}, {% endif %}{% if profile.major2 %}{{ profile.major2 }}{% endif %}
+            {% else %}Not specified{% endif %}
+          </span>
+          <button type="button" class="edit-btn" onclick="toggleAcademicEdit()">Edit</button>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">MINORS:</span>
+          <span class="detail-value">
+            {% if profile.minor1 or profile.minor2 %}
+              {% if profile.minor1 %}{{ profile.minor1 }}{% endif %}{% if profile.minor1 and profile.minor2 %}, {% endif %}{% if profile.minor2 %}{{ profile.minor2 }}{% endif %}
+            {% else %}Not specified{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div id="academic-edit" style="display:none;">
+        <form method="POST" id="academic-form">
+          {% csrf_token %}
+
+          <div class="academic-row">
+            <span class="detail-label">School:</span>
+            <select name="school" class="academic-input" id="school-select">
+              <option value="">-- Select School --</option>
+              {% for school in schools %}
+                <option value= "{{ school.id }}" {% if selected_school and selected_school.id == school.id %} selected {% endif %}>
+                  {{ school.school_name}}
+                </option>
+                {% endfor %}
+            </select>
+          </div>
+
+          <div class="academic-row">
+            <span class="detail-label">Primary Major: </span>
+            <select name="major1" class="academic-input" id="major1-select">
+              <option value="">Select Major</option>
+              {% for major in major1_options %}
+                <option value="{{ major.id }}" {% if profile.major1 and profile.major1.id == major.id %}selected{% endif %}>
+                  {{ major.major_name }}
+                </option>
+              {% endfor %}
+              {% if profile.major1 and not major1_options %}
+                <option value="{{ profile.major1.id }}" selected>{{ profile.major1.major_name }}</option>
+              {% endif %}
+            </select>
+          </div>
+
+          <div class="academic-row">
+            <span class="detail-label">Secondary Major: </span>
+            <select name="major2" class="academic-input" id="major2-select">
+              <option value="">Select Major</option>
+              {% for major in major2_options %}
+                <option value="{{ major.id }}" {% if profile.major2 and profile.major2.id == major.id %}selected{% endif %}>
+                  {{ major.major_name }}
+                </option>
+              {% endfor %}
+              {% if profile.major2 and not major2_options %}
+                <option value="{{ profile.major2.id }}" selected>{{ profile.major2.major_name }}</option>
+              {% endif %}
+            </select>
+          </div>
+
+          <div class="academic-row">
+            <span class="detail-label">Primary Minor: </span>
+            <select name="minor1" class="academic-input">
+              <option value="">Select Minor </option>
+              {% for minor in minors %}
+                <option value="{{ minor.id }}" {% if profile.minor1 and profile.minor1.id == minor.id %}selected{% endif %}>
+                  {{ minor.minor_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="academic-row">
+            <span class="detail-label">Secondary Minor: </span>
+            <select name ="minor2" class="academic-input">
+              <option value="">Select Minor </option>
+              {% for minor in minors %}
+                <option value="{{ minor.id }}" {% if profile.minor2 and profile.minor2.id == minor.id %}selected{% endif %}>
+                  {{ minor.minor_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div style="margin-top:20px;">
+            <input type="hidden" name="update_academic_info" value="true">
+            <button type="submit" class="save-btn" name="save_profile">Save</button>
+            <button type="button" class="cancel-btn" onclick="toggleAcademicEdit()">Cancel</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <div class="certifications-section">
+      <span class="detail-label">CERTIFICATIONS:</span>
+      {% if profile.certificates.all %}
+        <div class="certification-badges">
+          {% for cert in profile.certificates.all %}
+            <span class="cert-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: white !important; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important; display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem;">
+              {% if cert.type.icon and "fa-" in cert.type.icon %}
+                <i class="{{ cert.type.icon }}" style="font-size: 18px;"></i>
+              {% elif cert.type.icon %}
+                <span style="font-size: 18px;">{{ cert.type.icon }}</span>
+              {% else %}
+                <i class="fa-solid fa-certificate" style="font-size: 18px;"></i>
+              {% endif %}
+              <span>{{ cert.type.name }} - Level {{ cert.level.level }}</span>
+            </span>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="certification-badges">
+          <span class="detail-value">No certifications yet</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="danger-section" style="margin-top:40px;padding-top:20px;border-top:1px solid #ddd;">
+      <h3 style="color:#d32f2f;margin-bottom:15px;">Danger Zone</h3>
+      <form method="POST" class="delete-account-form" action="{% url 'profile' %}">
+        {% csrf_token %}
+        <input type="hidden" name="delete_account" value="true">
+        <button type="submit" class="delete-btn" style="background-color:#d32f2f;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;">
+          Delete My Account
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleEmailEdit(){
+  const d=document.getElementById('email-display');
+  const e=document.getElementById('email-edit');
+  d.style.display=d.style.display==='none'?'flex':'none';
+  e.style.display=e.style.display==='none'?'flex':'none';
+}
+function toggleAcademicEdit(){
+  const d=document.getElementById('academic-display');
+  const e=document.getElementById('academic-edit');
+  d.style.display=d.style.display==='none'?'block':'none';
+  e.style.display=e.style.display==='none'?'block':'none';
+}
+
+// Attach confirm handler to delete account form
+document.addEventListener('DOMContentLoaded', function() {
+  const deleteForm = document.querySelector('.delete-account-form');
+  if (deleteForm) {
+    const submitHandler = function(e) {
+      e.preventDefault();
+      const form = this;
+      showConfirm('Are you absolutely sure you want to delete your account? This action cannot be undone.', 'Delete Account', 'error')
+        .then((confirmed) => {
+          if (confirmed) {
+            // Create a temporary form to ensure all data is submitted
+            const formData = new FormData(form);
+            const formAction = form.getAttribute('action') || form.action;
+            const formMethod = form.getAttribute('method') || 'POST';
+            
+            // Create a temporary form and submit it
+            const tempForm = document.createElement('form');
+            tempForm.method = formMethod;
+            tempForm.action = formAction;
+            tempForm.style.display = 'none';
+            
+            // Copy all form data
+            for (let [key, value] of formData.entries()) {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = key;
+              input.value = value;
+              tempForm.appendChild(input);
+            }
+            
+            document.body.appendChild(tempForm);
+            tempForm.submit();
+          }
+        });
+    };
+    deleteForm.addEventListener('submit', submitHandler);
+  }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const schoolSelect = document.getElementById('school-select');
+  const major1Dropdown = document.getElementById('major1-select');
+
+  if (!schoolSelect || !major1Dropdown) {
+    return;
+  }
+
+  const populateMajors = (dropdown, majors, selectedValue = '') => {
+    dropdown.innerHTML = '<option value="">Select Major</option>';
+    majors.forEach(major => {
+      const option = document.createElement('option');
+      option.value = major.id;
+      option.textContent = major.name;
+      if (selectedValue && String(selectedValue) === String(major.id)) {
+        option.selected = true;
+      }
+      dropdown.appendChild(option);
+    });
+  };
+
+  schoolSelect.addEventListener('change', function() {
+    const schoolId = this.value;
+    const currentMajor1 = major1Dropdown.value;
+    populateMajors(major1Dropdown, [], '');
+
+    if (schoolId) {
+      fetch(`/api/majors/?school_id=${schoolId}`)
+        .then(response => response.json())
+        .then(data => {
+          populateMajors(major1Dropdown, data.majors, currentMajor1);
+        });
+    } else {
+      populateMajors(major1Dropdown, [], '');
+    }
+  });
+});
+</script>
+
+{% endblock %}

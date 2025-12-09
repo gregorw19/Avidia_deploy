@@ -1,0 +1,37 @@
+{% extends "pct/base.html" %}
+
+{% block body_class %} home-page{% endblock %}
+{% block main_class %} home-main{% endblock %}
+
+ {% block nav %}
+    {% include 'pct/partials/navbar.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="home-cards">
+    <section class="reservation-group">
+        <header class="reservation-group__header">
+            <h2>Past Reports:</h2>
+            <a class="reservation-group__see-all" href="#">See All</a>
+        </header>
+        <div class="reservation-group__cards">
+            <article class="reservation-card">
+                <p class="reservation-card__date">Sunday, October 19, 2025</p>
+                <p class="reservation-card__title">Week of 10/12 - 10/18</p>
+                <div class="reservation-card__actions">
+                    <a class="reservation-card__btn reservation-card__btn--primary" href="#">View Report</a>
+                </div>
+            </article>
+            <article class="reservation-card">
+                <p class="reservation-card__date">Sunday, October 19, 2025</p>
+                <p class="reservation-card__title">Week of 10/5 - 10/11</p>
+                <div class="reservation-card__actions">
+                    <a class="reservation-card__btn reservation-card__btn--primary" href="#">View Report</a>
+                </div>
+            </article>
+             
+        </div>
+    </section>
+</div>
+
+{% endblock %}

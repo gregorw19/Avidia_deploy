@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Out | The Hatchery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'pct/profile.css' %}">
+    <style>
+        .logout-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .logout-card {
+            background-color: #171A21;
+            border-radius: 10px;
+            padding: 50px 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .logout-icon {
+            font-size: 72px;
+            margin-bottom: 20px;
+        }
+        
+        .logout-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: white;
+        }
+        
+        .logout-message {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: #ccc;
+        }
+        
+        .logout-btn {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #5B8CFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .logout-btn:hover {
+            background-color: #4a7ddb;
+        }
+        
+        .cancel-btn {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #2a2a2a;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-left: 15px;
+            transition: background-color 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .cancel-btn:hover {
+            background-color: #3a3a3a;
+        }
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+        <div class="logout-container">
+            <div class="logout-card">
+                <div class="logout-icon">👋</div>
+                <h1 class="logout-title">Signing you out…</h1>
+                <p class="logout-message">Thanks for visiting the Hatchery Portal.</p>
+                
+                <form id="logout-form" method="post" style="display:none;">
+                    {% csrf_token %}
+                    <button type="submit">Sign Out</button>
+                </form>
+                <p style="margin-top: 10px; color: #ccc;">If this takes more than a second, <a href="{% url 'login' %}">return to login</a>.</p>
+            </div>
+        </div>
+    </div>
+
+    {% include 'pct/footer.html' %}
+    <script>
+      const form = document.getElementById('logout-form');
+      if (form) {
+        form.submit();
+      }
+    </script>
+</body>
+</html>

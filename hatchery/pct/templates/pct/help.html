@@ -1,0 +1,113 @@
+{% extends "pct/base.html" %}
+{% block title %}Help | The Hatchery{% endblock %}
+{% block body_class %} help-page{% endblock %}
+{% block main_class %} help-main{% endblock %}
+
+{% block nav %}
+    <div class="header-links" style="padding: 20px;">
+        {% if request.user.is_authenticated %}
+            <a href="{% url 'home' %}" style="color: white; font-size: 1.5rem; text-decoration: none;background-color:#1a1d23;border-radius: 20px;padding: 10px 20px;">← Back to Homepage</a>
+        {% else %}
+            <a href="{% url 'login' %}" style="color: white; font-size: 1.5rem; text-decoration: none;background-color:#1a1d23;border-radius: 20px;padding: 10px 20px;">← Back to Login</a>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block content %}
+
+<div class="help-container">
+    <h1 class="help-title">FAQs</h1>
+
+    <div class="help-card">
+
+        <div class="faq-item">
+            <h3>What is The Hatchery?</h3>
+            <p>The Hatchery is Boston College’s first community makerspace, located on the 2nd and 3rd floors of 245 Beacon St.</p>
+        </div>
+
+        <div class="faq-item">
+            <h3>Who can use The Hatchery?</h3>
+            <p>The Hatchery Makerspaces are open to all Boston College students, faculty, and staff, regardless of school or department.</p>
+        </div>
+
+        <div class="faq-item">
+            <h3>How can I access The Hatchery?</h3>
+            <p>To join the maker community at The Hatchery, take our brief online Makerspace Orientation. Once complete, you’ll gain access to QReserve where you can book Tool Trainings and equipment.</p>
+        </div>
+
+        <div class="faq-item">
+            <h3>I am a faculty member. Can I use The Hatchery for my academic course?</h3>
+            <p>Yes! Visit our Collaboration Page to learn how your course can partner with The Hatchery.</p>
+        </div>
+
+        <div class="faq-item">
+            <h3>Can my on-campus club/organization hold an event with The Hatchery?</h3>
+            <p>The Hatchery partners with clubs, teams, organizations, and departments. Visit our Collaboration Page for more details.</p>
+        </div>
+
+        <div class="faq-item">
+            <h3>I still have more questions. Where can I get the answers?</h3>
+            <p>Visit our Contact page or stop by to speak with a Hatchery Team Member.</p>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: #000;
+        margin: 0;
+        color: #e0e0e0;
+    }
+
+    .help-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 40px;
+        text-align: center;
+    }
+
+    .help-title {
+        font-size: 2.6rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 30px;
+    }
+
+    .help-card {
+        background-color: #1a1d23;
+        width: 85%;
+        max-width: 900px;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 0 25px rgba(0, 0, 0, 0.35);
+        text-align: left;
+    }
+
+    .faq-item {
+        margin-bottom: 35px;
+    }
+
+    .faq-item h3 {
+        color: #dcdcdc;
+        font-size: 1.3rem;
+        margin-bottom: 8px;
+    }
+
+    .faq-item p {
+        color: #c7c7c7;
+        line-height: 1.6;
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    
+    .faq-item:not(:last-child) {
+        padding-bottom: 25px;
+        border-bottom: 1px solid #2a2e35;
+    }
+</style>
+
+{% endblock %}

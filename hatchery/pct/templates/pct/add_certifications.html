@@ -1,0 +1,1631 @@
+{% extends "pct/base_profile.html" %}
+
+{% block content %}
+<div class="add-cert-container">
+  
+  <!-- ===== Top Half: Certifications Section ===== -->
+  <section class="cert-section">
+    <div class="section-header">
+      <div class="selection-info">
+        {% if selected_cert_ids %}
+        <span class="selection-count">{{ selected_cert_ids|length }} certification{{ selected_cert_ids|length|pluralize }} selected</span>
+        <form method="post" action="{% url 'add_certifications' %}" style="display: inline;" onsubmit="event.preventDefault(); clearSelections(this);">
+          {% csrf_token %}
+          <input type="hidden" name="clear_selections" value="1">
+          <button type="submit" class="btn-clear">Clear All</button>
+        </form>
+        {% else %}
+        <span class="selection-count">No certifications selected</span>
+        {% endif %}
+      </div>
+      <div class="search-container">
+        <form method="get" action="" class="search-form">
+          {% if user_search_query %}
+          <input type="hidden" name="user_search" value="{{ user_search_query }}">
+          {% endif %}
+          <input 
+            type="text" 
+            name="cert_search" 
+            id="cert-search-input"
+            placeholder="Search by Name" 
+            class="search-bar"
+            value="{{ cert_search_query|default:'' }}"
+            autocomplete="off"
+          >
+          <button type="button" class="search-btn" onclick="searchCertifications()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 19L13 13M15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1C11.866 1 15 4.13401 15 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </form>
+        <button type="button" class="btn-primary" onclick="openCertModal()">Add Cert.</button>
+      </div>
+    </div>
+
+    <!-- Certification Cards Grid -->
+    <div class="cert-grid-wrapper">
+      <div class="cert-grid">
+        {% for certification in certifications %}
+        <div class="cert-card {% if certification.id in selected_cert_ids %}selected{% endif %}">
+          <div class="cert-icon">
+            {% if certification.type.icon and "fa-" in certification.type.icon %}
+              <i class="{{ certification.type.icon }}" style="font-size: 40px;"></i>
+            {% elif certification.type.icon %}
+              <span style="font-size: 40px;">{{ certification.type.icon }}</span>
+            {% else %}
+              <i class="fa-solid fa-certificate" style="font-size: 40px;"></i>
+            {% endif %}
+          </div>
+          <div class="cert-info">
+            <h5 class="cert-title">{{ certification.type.name }}</h5>
+            <p class="cert-desc">
+              {% if certification.type.description %}
+                Description: {{ certification.type.description }}
+              {% else %}
+                Description: Master at {{ certification.type.name }}.
+              {% endif %}
+            </p>
+            <p class="cert-level">Level {{ certification.level.level }}</p>
+          </div>
+          <div class="cert-actions">
+            <button type="button" class="btn-blue toggle-cert-btn"
+                    data-cert-id="{{ certification.id }}">
+              {% if certification.id in selected_cert_ids %}Deselect{% else %}Select{% endif %}
+            </button>
+            <button type="button" class="btn-blue change-cert-btn" 
+                    data-cert-id="{{ certification.id }}"
+                    data-cert-title="{{ certification.type.name|escapejs }}"
+                    data-cert-desc="{{ certification.type.description|default:""|escapejs }}"
+                    data-cert-level="{{ certification.level.level }}"
+                    data-cert-icon="{{ certification.type.icon|default:'fa-solid fa-certificate'|escapejs }}">Change</button>
+          </div>
+        </div>
+        {% empty %}
+        <p class="no-results">No certifications available.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Bottom Half: Users Section ===== -->
+  <section class="users-section">
+    <div class="section-header">
+      <div class="search-container">
+        <form method="get" action="" class="search-form">
+          {% if cert_search_query %}
+          <input type="hidden" name="cert_search" value="{{ cert_search_query }}">
+          {% endif %}
+          <input 
+            type="text" 
+            name="user_search" 
+            id="user-search-input"
+            placeholder="Search by Name" 
+            class="search-bar"
+            value="{{ user_search_query|default:'' }}"
+            autocomplete="off"
+          >
+          <button type="button" class="search-btn" onclick="searchUsers()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 19L13 13M15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1C11.866 1 15 4.13401 15 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- User Cards Grid -->
+    <div class="users-grid-wrapper">
+      <div class="users-grid">
+        {% for user in users %}
+        <div class="user-card">
+          <div class="user-icon">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="20" cy="15" r="8" stroke="currentColor" stroke-width="2"/>
+              <path d="M8 32C8 26 13 22 20 22C27 22 32 26 32 32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="user-info">
+            <h5 class="user-name">{{ user.profile.get_full_name }}</h5>
+          </div>
+          <div class="user-actions">
+            <form method="post" action="{% url 'add_certifications' %}" class="certify-user-form" onsubmit="event.preventDefault(); submitCertifyUser(this);">
+              {% csrf_token %}
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <input type="hidden" name="certify_user" value="1">
+              <button type="submit" class="certify-btn">Certify</button>
+            </form>
+            <a href="{% url 'view_student_profile' user.id %}" class="view-profile-btn">View Profile</a>
+          </div>
+        </div>
+        {% empty %}
+        <p class="no-results">No students found.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<style>
+/* Hide Django messages on this page */
+.messages {
+  display: none !important;
+}
+
+.add-cert-container {
+  height: calc(100vh - 120px); /* Full height minus nav/footer */
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  gap: 0;
+  overflow: hidden;
+}
+
+.cert-section {
+  height: 50%;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 2px solid #2a2d34;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  min-width: 65%;
+}
+
+.users-section {
+  height: 50%;
+  display: flex;
+  flex-direction: column;
+  padding-top: 1rem;
+  min-width: 35%;
+}
+
+/* Section Header */
+.section-header {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #1a1d24;
+  border-radius: 8px;
+  border: 1px solid #2a2d34;
+}
+
+.selection-count {
+  color: #5c73ff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.btn-clear {
+  background-color: #d32f2f;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+}
+
+.btn-clear:hover {
+  background-color: #c62828;
+}
+
+.search-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.search-form {
+  flex: 1;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.search-bar {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #2a2d34;
+  background-color: #171A21;
+  color: white;
+  font-size: 1rem;
+}
+
+.search-bar::placeholder {
+  color: #888;
+}
+
+.search-btn {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: none;
+  background-color: #2a2d34;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.search-btn:hover {
+  background-color: #3a3d44;
+}
+
+.btn-primary {
+  background-color: #5c73ff;
+  border: none;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s ease-in-out;
+  white-space: nowrap;
+}
+
+.btn-primary:hover {
+  background-color: #4a63ff;
+}
+
+.add-cert-form {
+  margin: 0;
+}
+
+/* Scrollable Grid Wrappers */
+.cert-grid-wrapper,
+.users-grid-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.5rem;
+}
+
+.cert-grid-wrapper::-webkit-scrollbar,
+.users-grid-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cert-grid-wrapper::-webkit-scrollbar-track,
+.users-grid-wrapper::-webkit-scrollbar-track {
+  background: #171A21;
+  border-radius: 4px;
+}
+
+.cert-grid-wrapper::-webkit-scrollbar-thumb,
+.users-grid-wrapper::-webkit-scrollbar-thumb {
+  background: #2a2d34;
+  border-radius: 4px;
+}
+
+.cert-grid-wrapper::-webkit-scrollbar-thumb:hover,
+.users-grid-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #3a3d44;
+}
+
+/* ===== Certification Cards Grid ===== */
+.cert-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.cert-card {
+  background-color: #f7d87c;
+  color: #111;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+  border: 2px solid #e6c869;
+  position: relative;
+}
+
+.cert-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.cert-card.selected {
+  border-color: #5c73ff;
+  box-shadow: 0 0 0 3px rgba(92, 115, 255, 0.5);
+  background-color: #fff4c8;
+}
+
+.cert-icon {
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  min-height: 60px;
+}
+
+.cert-icon i {
+  color: #111 !important;
+  display: inline-block !important;
+  font-family: "Font Awesome 6 Free" !important;
+  font-weight: 900 !important;
+}
+
+.cert-icon i.fa-solid::before {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+}
+
+.cert-info {
+  flex: 1;
+}
+
+.cert-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #111;
+}
+
+.cert-desc {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.cert-level {
+  font-size: 0.85rem;
+  color: #555;
+  font-weight: 600;
+}
+
+.cert-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cert-action-form {
+  flex: 1;
+  margin: 0;
+}
+
+.btn-blue {
+  flex: 1;
+  background-color: #4d7fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+  color: white;
+}
+
+.toggle-cert-btn {
+  flex: 1;
+}
+
+.btn-blue:hover {
+  background-color: #3a66cc;
+}
+
+/* ===== User Cards Grid ===== */
+.users-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.user-card {
+  background-color: #171A21;
+  color: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: 2px solid #2a2d34;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+}
+
+.user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  border-color: #3a3d44;
+}
+
+.user-icon {
+  color: white;
+  display: flex;
+  align-items: center;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: white;
+}
+
+.user-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-direction: column;
+}
+
+.certify-user-form {
+  margin: 0;
+}
+
+.certify-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.certify-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.view-profile-btn {
+  width: 100%;
+  background-color: #2a2d34;
+  border: 2px solid #3a3d44;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  text-align: center;
+  display: block;
+}
+
+.view-profile-btn:hover {
+  background-color: #3a3d44;
+  border-color: #4a4d54;
+  transform: translateY(-2px);
+}
+
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #777;
+  font-style: italic;
+  padding: 2rem;
+}
+
+/* Responsive layout adjustments */
+@media (min-width: 1200px) {
+  .add-cert-container {
+    flex-direction: row;
+  }
+  
+  .cert-section {
+    width: 65%;
+    height: 100%;
+    border-right: 2px solid #2a2d34;
+    border-bottom: none;
+    margin-bottom: 0;
+    margin-right: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 0;
+  }
+  
+  .users-section {
+    width: 35%;
+    height: 100%;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 1100px) {
+  .cert-grid,
+  .users-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .cert-grid,
+  .users-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Modal Styles ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-content {
+  background-color: #171A21;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 2px solid #2a2d34;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #2a2d34;
+}
+
+.modal-header h2 {
+  color: white;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: white;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #2a2d34;
+  background-color: #1a1d24;
+  color: white;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #5c73ff;
+  box-shadow: 0 0 0 3px rgba(92, 115, 255, 0.2);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.btn-modal-primary {
+  background-color: #5c73ff;
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.btn-modal-primary:hover {
+  background-color: #4a63ff;
+}
+
+.btn-modal-secondary {
+  background-color: #2a2d34;
+  border: 2px solid #3a3d44;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.btn-modal-secondary:hover {
+  background-color: #3a3d44;
+}
+
+.error-message {
+  color: #ff4444;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  display: none;
+}
+
+.error-message.show {
+  display: block;
+}
+
+/* Icon Picker Styles */
+.icon-picker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.icon-picker-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #2a2d34;
+  background-color: #1a1d24;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.icon-picker-btn:hover {
+  border-color: #5c73ff;
+  background-color: #23252e;
+}
+
+.icon-picker-btn span:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #2a2d34;
+  border-radius: 6px;
+}
+
+.icon-picker-content {
+  background-color: #171A21;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 2px solid #2a2d34;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.icon-picker-search {
+  margin-bottom: 0.5rem;
+}
+
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 1rem;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 1rem;
+  background-color: #1a1d24;
+  border-radius: 8px;
+  border: 1px solid #2a2d34;
+}
+
+.icon-picker-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.icon-picker-grid::-webkit-scrollbar-track {
+  background: #171A21;
+  border-radius: 4px;
+}
+
+.icon-picker-grid::-webkit-scrollbar-thumb {
+  background: #2a2d34;
+  border-radius: 4px;
+}
+
+.icon-picker-grid::-webkit-scrollbar-thumb:hover {
+  background: #3a3d44;
+}
+
+.icon-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background-color: #23252e;
+  border: 2px solid #2a2d34;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+  font-size: 24px;
+}
+
+.icon-item:hover {
+  background-color: #5c73ff;
+  border-color: #5c73ff;
+  transform: scale(1.1);
+}
+
+.icon-item.selected {
+  background-color: #5c73ff;
+  border-color: #5c73ff;
+  box-shadow: 0 0 0 3px rgba(92, 115, 255, 0.3);
+}
+
+/* Alert/Confirm dialog styles are defined in base_profile.html */
+</style>
+
+<!-- Modal for Add/Change Certification -->
+<div id="cert-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modal-title">Add Certification</h2>
+      <button class="modal-close" onclick="closeCertModal()">&times;</button>
+    </div>
+    <form id="cert-form" class="modal-form" onsubmit="submitCertForm(event)">
+      {% csrf_token %}
+      <input type="hidden" id="cert-id" name="cert_id" value="">
+      
+      <div class="form-group">
+        <label class="form-label" for="cert-title">Title *</label>
+        <input type="text" id="cert-title" class="form-input" name="title" required>
+        <div class="error-message" id="title-error"></div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="cert-description">Description</label>
+        <textarea id="cert-description" class="form-textarea" name="description"></textarea>
+        <div class="error-message" id="description-error"></div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="cert-level">Level *</label>
+        <select id="cert-level" class="form-select" name="level" required>
+          <option value="">Select Level</option>
+          <option value="1">Level 1</option>
+          <option value="2">Level 2</option>
+          <option value="3">Level 3</option>
+        </select>
+        <div class="error-message" id="level-error"></div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Icon</label>
+        <div class="icon-picker-container">
+          <button type="button" class="icon-picker-btn" onclick="openIconPicker()">
+            <span id="selected-icon-preview">
+              <i class="fa-solid fa-certificate" style="font-size: 24px;"></i>
+            </span>
+            <span>Choose Icon</span>
+          </button>
+          <input type="hidden" id="cert-icon" name="icon" value="fa-solid fa-certificate">
+        </div>
+        <div class="error-message" id="icon-error"></div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" class="btn-modal-secondary" onclick="closeCertModal()">Cancel</button>
+        <button type="submit" class="btn-modal-primary" id="submit-cert-btn">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Icon Picker Modal -->
+<div id="icon-picker-modal" class="modal-overlay">
+  <div class="icon-picker-content">
+    <div class="modal-header">
+      <h2>Choose an Icon</h2>
+      <button class="modal-close" onclick="closeIconPicker()">&times;</button>
+    </div>
+    <div class="icon-picker-search">
+      <input type="text" id="icon-search" placeholder="Search icons..." class="form-input">
+    </div>
+    <div class="icon-picker-grid" id="icon-picker-grid">
+      <!-- Icons will be populated by JavaScript -->
+    </div>
+  </div>
+</div>
+
+<script>
+// Configuration
+const SEARCH_CERTS_URL = '{% url "search_certifications_api" %}';
+const SEARCH_USERS_URL = '{% url "search_users_api" %}';
+const CREATE_CERT_URL = '{% url "create_certification_api" %}';
+const UPDATE_CERT_URL = '{% url "update_certification_api" 999 %}';
+const ADD_CERTS_URL = '{% url "add_certifications" %}';
+const VIEW_PROFILE_BASE_URL = '{% url "view_student_profile" 999 %}';
+const CSRF_TOKEN = '{{ csrf_token }}';
+
+// Real-time search debounce
+let certSearchTimeout;
+let userSearchTimeout;
+
+document.addEventListener('DOMContentLoaded', function() {
+  const certSearchInput = document.getElementById('cert-search-input');
+  const userSearchInput = document.getElementById('user-search-input');
+  
+  if (certSearchInput) {
+    certSearchInput.addEventListener('input', function() {
+      clearTimeout(certSearchTimeout);
+      certSearchTimeout = setTimeout(() => {
+        searchCertifications();
+      }, 300); // 300ms debounce
+    });
+  }
+  
+  if (userSearchInput) {
+    userSearchInput.addEventListener('input', function() {
+      clearTimeout(userSearchTimeout);
+      userSearchTimeout = setTimeout(() => {
+        searchUsers();
+      }, 300); // 300ms debounce
+    });
+  }
+  
+  // Close modal on overlay click
+  const modal = document.getElementById('cert-modal');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeCertModal();
+      }
+    });
+  }
+  
+  // Ensure all select forms have proper handlers (for server-rendered forms)
+  document.querySelectorAll('.cert-action-form').forEach(form => {
+    // Remove any existing handler to avoid duplicates
+    form.onsubmit = function(e) {
+      e.preventDefault();
+      submitSelectCert(this);
+    };
+  });
+  
+  // Ensure all certify forms have proper handlers (for server-rendered forms)
+  document.querySelectorAll('.certify-user-form').forEach(form => {
+    form.onsubmit = function(e) {
+      e.preventDefault();
+      submitCertifyUser(this);
+    };
+  });
+  
+  // Attach toggle button handlers for server-rendered certifications
+  document.querySelectorAll('.toggle-cert-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const certId = parseInt(this.getAttribute('data-cert-id'));
+      toggleCertSelection(certId);
+    });
+  });
+  
+  // Attach change button handlers for server-rendered certifications
+  document.querySelectorAll('.change-cert-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const certId = this.getAttribute('data-cert-id');
+      const title = this.getAttribute('data-cert-title') || '';
+      const desc = this.getAttribute('data-cert-desc') || '';
+      const level = this.getAttribute('data-cert-level') || '';
+      const icon = this.getAttribute('data-cert-icon') || 'fa-solid fa-certificate';
+      openCertModal(certId ? parseInt(certId) : null, title, desc, level ? parseInt(level) : '', icon);
+    });
+  });
+});
+
+function searchCertifications() {
+  const query = document.getElementById('cert-search-input').value;
+  const url = `${SEARCH_CERTS_URL}?q=${encodeURIComponent(query)}`;
+  
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        console.error('Search error:', data.error);
+        return;
+      }
+      renderCertifications(data.certifications);
+    })
+    .catch(error => {
+      console.error('Search failed:', error);
+    });
+}
+
+function searchUsers() {
+  const query = document.getElementById('user-search-input').value;
+  const url = `${SEARCH_USERS_URL}?q=${encodeURIComponent(query)}`;
+  
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        console.error('Search error:', data.error);
+        return;
+      }
+      renderUsers(data.users);
+    })
+    .catch(error => {
+      console.error('Search failed:', error);
+    });
+}
+
+function getCsrfToken() {
+  // Try to get from the modal form first, then fallback to constant
+  const tokenEl = document.querySelector('#cert-form [name=csrfmiddlewaretoken]');
+  if (tokenEl) return tokenEl.value;
+  return CSRF_TOKEN || '';
+}
+
+function renderCertifications(certifications) {
+  const certGrid = document.querySelector('.cert-grid');
+  if (!certGrid) return;
+  
+  if (certifications.length === 0) {
+    certGrid.innerHTML = '<p class="no-results">No certifications found.</p>';
+    return;
+  }
+  
+  // Get currently selected cert IDs from cards with 'selected' class
+  const selectedIds = Array.from(document.querySelectorAll('.cert-card.selected'))
+    .map(card => {
+      const btn = card.querySelector('.toggle-cert-btn');
+      return btn ? parseInt(btn.getAttribute('data-cert-id')) : null;
+    })
+    .filter(id => id !== null);
+  
+  certGrid.innerHTML = certifications.map(cert => {
+    const isSelected = selectedIds.includes(cert.id);
+    return `
+    <div class="cert-card ${isSelected ? 'selected' : ''}">
+      <div class="cert-icon">
+        ${cert.icon && (cert.icon.startsWith('fa-') || cert.icon.startsWith('f')) 
+          ? `<i class="${cert.icon}" style="font-size: 40px;"></i>`
+          : `<span style="font-size: 40px;">${cert.icon || '📜'}</span>`
+        }
+      </div>
+      <div class="cert-info">
+        <h5 class="cert-title">${escapeHtml(cert.name)}</h5>
+        <p class="cert-desc">
+          Description: ${
+            cert.description
+              ? escapeHtml(cert.description)
+              : 'Master at ' + escapeHtml(cert.name) + '.'
+          }
+        </p>
+        <p class="cert-level">Level ${cert.level}</p>
+      </div>
+      <div class="cert-actions">
+        <button type="button" class="btn-blue toggle-cert-btn"
+                data-cert-id="${cert.id}">
+          ${isSelected ? 'Deselect' : 'Select'}
+        </button>
+        <button type="button" class="btn-blue change-cert-btn"
+                data-cert-id="${cert.id}"
+                data-cert-title="${escapeHtml(cert.name)}"
+                data-cert-desc="${escapeHtml(cert.description || '')}"
+                data-cert-level="${cert.level}"
+                data-cert-icon="${escapeHtml(cert.icon || 'fa-solid fa-certificate')}">Change</button>
+      </div>
+    </div>
+  `;
+  }).join('');
+  
+  // Re-attach toggle button handlers for dynamically rendered certifications
+  document.querySelectorAll('.toggle-cert-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const certId = parseInt(this.getAttribute('data-cert-id'));
+      toggleCertSelection(certId);
+    });
+  });
+  
+  // Re-attach change button handlers for dynamically rendered certifications
+  document.querySelectorAll('.change-cert-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const certId = this.getAttribute('data-cert-id');
+      const title = this.getAttribute('data-cert-title') || '';
+      const desc = this.getAttribute('data-cert-desc') || '';
+      const level = this.getAttribute('data-cert-level') || '';
+      const icon = this.getAttribute('data-cert-icon') || 'fa-solid fa-certificate';
+      openCertModal(certId ? parseInt(certId) : null, title, desc, level ? parseInt(level) : '', icon);
+    });
+  });
+  
+  // Update selection count display
+  updateSelectionCount();
+}
+
+function renderUsers(users) {
+  const usersGrid = document.querySelector('.users-grid');
+  if (!usersGrid) return;
+  
+  if (users.length === 0) {
+    usersGrid.innerHTML = '<p class="no-results">No students found.</p>';
+    return;
+  }
+  
+  usersGrid.innerHTML = users.map(user => `
+    <div class="user-card">
+      <div class="user-icon">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="15" r="8" stroke="currentColor" stroke-width="2"/>
+          <path d="M8 32C8 26 13 22 20 22C27 22 32 26 32 32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="user-info">
+        <h5 class="user-name">${escapeHtml(user.name)}</h5>
+      </div>
+      <div class="user-actions">
+        <form method="post" action="${ADD_CERTS_URL}" class="certify-user-form" onsubmit="event.preventDefault(); submitCertifyUser(this);">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${getCsrfToken()}">
+          <input type="hidden" name="user_id" value="${user.id}">
+          <input type="hidden" name="certify_user" value="1">
+          <button type="submit" class="certify-btn">Certify</button>
+        </form>
+        <a href="${VIEW_PROFILE_BASE_URL.replace('999', user.id)}" class="view-profile-btn">View Profile</a>
+      </div>
+    </div>
+  `).join('');
+  
+  // Re-attach certify form handlers for dynamically rendered users
+  document.querySelectorAll('.certify-user-form').forEach(form => {
+    // Remove existing handler to avoid duplicates
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    newForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      submitCertifyUser(this);
+    });
+  });
+}
+
+function toggleCertSelection(certId) {
+  // Find the card by looking for the toggle button with this cert ID
+  const toggleBtn = document.querySelector(`.toggle-cert-btn[data-cert-id="${certId}"]`);
+  const card = toggleBtn ? toggleBtn.closest('.cert-card') : null;
+  // Check current selection state from the card's selected class
+  const isCurrentlySelected = card ? card.classList.contains('selected') : false;
+  const isChecked = !isCurrentlySelected;
+  
+  const formData = new FormData();
+  formData.append('toggle_cert', '1');
+  formData.append('cert_id', certId);
+  formData.append('csrfmiddlewaretoken', getCsrfToken());
+  
+  fetch(ADD_CERTS_URL, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-CSRFToken': getCsrfToken(),
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      // Update UI immediately
+      if (card) {
+        if (isChecked) {
+          card.classList.add('selected');
+        } else {
+          card.classList.remove('selected');
+        }
+      }
+      // Update button text if exists
+      const toggleBtn = card ? card.querySelector('.toggle-cert-btn') : null;
+      if (toggleBtn) {
+        toggleBtn.textContent = isChecked ? 'Deselect' : 'Select';
+      }
+      // Update selection count
+      updateSelectionCount();
+      // No page reload needed - UI is already updated and server state is synced
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
+}
+
+function updateSelectionCount() {
+  // Count selected certifications by checking cards with 'selected' class
+  const selectedCount = document.querySelectorAll('.cert-card.selected').length;
+  const selectionInfo = document.querySelector('.selection-info');
+  if (selectionInfo) {
+    const countEl = selectionInfo.querySelector('.selection-count');
+    if (countEl) {
+      if (selectedCount > 0) {
+        countEl.textContent = `${selectedCount} certification${selectedCount !== 1 ? 's' : ''} selected`;
+        countEl.style.display = 'inline';
+      } else {
+        countEl.textContent = 'No certifications selected';
+      }
+    }
+  }
+}
+
+function clearSelections(form) {
+  const formData = new FormData(form);
+  fetch(ADD_CERTS_URL, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      // Clear all selected certifications from UI
+      document.querySelectorAll('.cert-card.selected').forEach(card => {
+        card.classList.remove('selected');
+        const toggleBtn = card.querySelector('.toggle-cert-btn');
+        if (toggleBtn) {
+          toggleBtn.textContent = 'Select';
+        }
+      });
+      // Update selection count
+      updateSelectionCount();
+      // No page reload needed - UI is already updated
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
+}
+
+function submitCertifyUser(form) {
+  const formData = new FormData(form);
+  const userId = formData.get('user_id');
+  
+  // Check if any certifications are selected
+  const selectedCount = document.querySelectorAll('.cert-card.selected').length;
+  if (selectedCount === 0) {
+    showAlert('Please select at least one certification first.', 'No Certification Selected', 'warning');
+    return;
+  }
+  
+  // Add the certify_user action
+  formData.append('certify_user', '1');
+  
+  fetch(ADD_CERTS_URL, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      // For certify user, we need to reload to show success messages
+      // But preserve the search query
+      const certSearchQuery = document.getElementById('cert-search-input')?.value || '';
+      const userSearchQuery = document.getElementById('user-search-input')?.value || '';
+      let reloadUrl = window.location.pathname;
+      const params = [];
+      if (certSearchQuery) params.push(`cert_search=${encodeURIComponent(certSearchQuery)}`);
+      if (userSearchQuery) params.push(`user_search=${encodeURIComponent(userSearchQuery)}`);
+      if (params.length) reloadUrl += '?' + params.join('&');
+      window.location.href = reloadUrl;
+    } else {
+      console.error('Failed to certify user');
+      showAlert('Failed to certify user. Please try again.', 'Error', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('An error occurred. Please try again.', 'Error', 'error');
+  });
+}
+
+function openCertModal(certId = null, title = '', description = '', level = '', icon = '') {
+  const modal = document.getElementById('cert-modal');
+  const modalTitle = document.getElementById('modal-title');
+  const submitBtn = document.getElementById('submit-cert-btn');
+  const form = document.getElementById('cert-form');
+  
+  // Clear previous values
+  document.getElementById('cert-title').value = title;
+  document.getElementById('cert-description').value = description || '';
+  document.getElementById('cert-level').value = level || '';
+  document.getElementById('cert-id').value = certId || '';
+  
+  // Set icon
+  const iconValue = icon || 'fa-solid fa-certificate';
+  document.getElementById('cert-icon').value = iconValue;
+  updateIconPreview(iconValue);
+  
+  // Clear errors
+  document.querySelectorAll('.error-message').forEach(el => {
+    el.classList.remove('show');
+    el.textContent = '';
+  });
+  
+  if (certId) {
+    modalTitle.textContent = 'Change Certification';
+    submitBtn.textContent = 'Update';
+  } else {
+    modalTitle.textContent = 'Add Certification';
+    submitBtn.textContent = 'Create';
+  }
+  
+  modal.classList.add('active');
+}
+
+function closeCertModal() {
+  const modal = document.getElementById('cert-modal');
+  modal.classList.remove('active');
+  
+  // Reset form
+  const form = document.getElementById('cert-form');
+  form.reset();
+  document.getElementById('cert-id').value = '';
+  document.getElementById('cert-icon').value = 'fa-solid fa-certificate';
+  updateIconPreview('fa-solid fa-certificate');
+}
+
+// Icon Picker Functions
+const POPULAR_ICONS = [
+  // 3D Printing & Manufacturing
+  'fa-solid fa-cube', 'fa-solid fa-cubes', 'fa-solid fa-print', 'fa-solid fa-layer-group',
+  'fa-solid fa-box', 'fa-solid fa-boxes', 'fa-solid fa-cog', 'fa-solid fa-cogs',
+  'fa-solid fa-dice', 'fa-solid fa-shapes',
+  
+  // Woodworking & Tools
+  'fa-solid fa-hammer', 'fa-solid fa-screwdriver', 'fa-solid fa-wrench', 'fa-solid fa-toolbox',
+  'fa-solid fa-tree', 'fa-solid fa-screwdriver-wrench', 'fa-solid fa-tools',
+  'fa-solid fa-ruler', 'fa-solid fa-ruler-combined', 'fa-solid fa-compass',
+  
+  // Laser Cutting & Engraving
+  'fa-solid fa-scissors', 'fa-solid fa-bolt', 'fa-solid fa-fire',
+  'fa-solid fa-lightbulb', 'fa-solid fa-pen', 'fa-solid fa-paintbrush',
+  'fa-solid fa-marker', 'fa-solid fa-pen-nib', 'fa-solid fa-pencil',
+  
+  // Electronics & Soldering
+  'fa-solid fa-microchip', 'fa-solid fa-plug', 'fa-solid fa-battery-full',
+  'fa-solid fa-wifi', 'fa-solid fa-satellite-dish', 'fa-solid fa-memory',
+  'fa-solid fa-plug-circle-check',
+  
+  // Textiles & Sewing
+  'fa-solid fa-shirt', 'fa-solid fa-vest', 'fa-solid fa-hand',
+  'fa-solid fa-hand-holding', 'fa-solid fa-hand-sparkles', 'fa-solid fa-hand-scissors',
+  
+  // General Tools & Equipment
+  'fa-solid fa-compress', 'fa-solid fa-expand', 'fa-solid fa-sliders',
+  'fa-solid fa-filter', 'fa-solid fa-gear', 'fa-solid fa-gears',
+  
+  // Safety & Certification
+  'fa-solid fa-shield', 'fa-solid fa-shield-halved', 'fa-solid fa-certificate',
+  'fa-solid fa-award', 'fa-solid fa-medal', 'fa-solid fa-star',
+  'fa-solid fa-trophy', 'fa-solid fa-ribbon', 'fa-solid fa-badge-check',
+  
+  // Materials & Shapes (removed problematic ones)
+  'fa-solid fa-gem', 'fa-solid fa-hexagon', 'fa-solid fa-pentagon', 'fa-solid fa-triangle',
+  
+  // Machines & Equipment
+  'fa-solid fa-industry', 'fa-solid fa-warehouse', 'fa-solid fa-building',
+  'fa-solid fa-robot', 'fa-solid fa-server', 'fa-solid fa-computer',
+  'fa-solid fa-laptop', 'fa-solid fa-desktop', 'fa-solid fa-tablet',
+  
+  // Additional Useful Icons
+  'fa-solid fa-magnifying-glass', 'fa-solid fa-check', 'fa-solid fa-xmark',
+  'fa-solid fa-plus', 'fa-solid fa-minus', 'fa-solid fa-arrow-right',
+  'fa-solid fa-flask', 'fa-solid fa-vial', 'fa-solid fa-atom',
+  'fa-solid fa-snowflake', 'fa-solid fa-droplet', 'fa-solid fa-sun',
+  'fa-solid fa-moon', 'fa-solid fa-cloud',
+  
+  // More Icons to Fill Grid
+  'fa-solid fa-paperclip', 'fa-solid fa-link', 'fa-solid fa-chain',
+  'fa-solid fa-book', 'fa-solid fa-bookmark', 'fa-solid fa-tag',
+  'fa-solid fa-tags', 'fa-solid fa-folder', 'fa-solid fa-folder-open',
+  'fa-solid fa-file', 'fa-solid fa-file-lines', 'fa-solid fa-image',
+  'fa-solid fa-photo-film', 'fa-solid fa-video', 'fa-solid fa-camera',
+  'fa-solid fa-bell', 'fa-solid fa-envelope', 'fa-solid fa-inbox',
+  'fa-solid fa-calendar', 'fa-solid fa-clock', 'fa-solid fa-hourglass',
+  'fa-solid fa-stopwatch', 'fa-solid fa-user', 'fa-solid fa-users',
+  'fa-solid fa-user-group', 'fa-solid fa-heart', 'fa-solid fa-thumbs-up',
+  'fa-solid fa-thumbs-down', 'fa-solid fa-flag', 'fa-solid fa-star-half',
+  'fa-solid fa-circle-play', 'fa-solid fa-circle-pause', 'fa-solid fa-circle-stop',
+  'fa-solid fa-volume-high', 'fa-solid fa-volume-low', 'fa-solid fa-volume-xmark',
+  'fa-solid fa-music', 'fa-solid fa-headphones', 'fa-solid fa-mobile-screen',
+  'fa-solid fa-mobile-screen-button', 'fa-solid fa-phone', 'fa-solid fa-keyboard'
+];
+
+function openIconPicker() {
+  const modal = document.getElementById('icon-picker-modal');
+  const grid = document.getElementById('icon-picker-grid');
+  const currentIcon = document.getElementById('cert-icon').value;
+  
+  // Clear previous icons
+  grid.innerHTML = '';
+  
+  // Populate with popular icons (remove duplicates)
+  const uniqueIcons = [...new Set(POPULAR_ICONS)];
+  
+  // Filter out known problematic icons that don't render
+  const invalidIcons = [
+    'fa-solid fa-square-full', 'fa-solid fa-circle-full', 'fa-solid fa-diamond-full',
+    'fa-solid fa-radio', 'fa-solid fa-timer', 'fa-solid fa-calendar-days',
+    'fa-solid fa-circle-dot', 'fa-solid fa-circle-notch', 'fa-solid fa-hand-scissors',
+    'fa-solid fa-plug-circle-check', 'fa-solid fa-badge-check'
+  ];
+  
+  const validIcons = uniqueIcons.filter(icon => !invalidIcons.includes(icon));
+  
+  validIcons.forEach(iconClass => {
+    const iconItem = document.createElement('div');
+    iconItem.className = 'icon-item';
+    if (iconClass === currentIcon) {
+      iconItem.classList.add('selected');
+    }
+    const iconElement = document.createElement('i');
+    iconElement.className = iconClass;
+    iconItem.appendChild(iconElement);
+    iconItem.onclick = () => selectIcon(iconClass);
+    iconItem.title = iconClass; // Show icon class on hover
+    grid.appendChild(iconItem);
+    
+    // Check if icon actually rendered after a brief delay
+    setTimeout(() => {
+      const computedStyle = window.getComputedStyle(iconElement, '::before');
+      const hasContent = computedStyle.content && computedStyle.content !== 'none' && computedStyle.content !== '""';
+      const iconWidth = iconElement.offsetWidth;
+      const iconHeight = iconElement.offsetHeight;
+      
+      // If icon didn't render (no content and no size), remove it
+      if (!hasContent && iconWidth === 0 && iconHeight === 0) {
+        iconItem.remove();
+      }
+    }, 100);
+  });
+  
+  // Add search functionality
+  const searchInput = document.getElementById('icon-search');
+  searchInput.value = '';
+  searchInput.oninput = (e) => filterIcons(e.target.value);
+  
+  modal.classList.add('active');
+}
+
+function closeIconPicker() {
+  const modal = document.getElementById('icon-picker-modal');
+  modal.classList.remove('active');
+  document.getElementById('icon-search').value = '';
+}
+
+function selectIcon(iconClass) {
+  document.getElementById('cert-icon').value = iconClass;
+  updateIconPreview(iconClass);
+  closeIconPicker();
+}
+
+function updateIconPreview(iconClass) {
+  const preview = document.getElementById('selected-icon-preview');
+  if (iconClass && (iconClass.startsWith('fa-') || iconClass.startsWith('f'))) {
+    preview.innerHTML = `<i class="${iconClass}" style="font-size: 24px;"></i>`;
+  } else {
+    preview.innerHTML = `<span style="font-size: 24px;">${iconClass || '📜'}</span>`;
+  }
+}
+
+function filterIcons(searchTerm) {
+  const grid = document.getElementById('icon-picker-grid');
+  const items = grid.querySelectorAll('.icon-item');
+  const term = searchTerm.toLowerCase();
+  
+  items.forEach(item => {
+    const iconClass = item.querySelector('i')?.className || '';
+    const iconName = iconClass.replace(/fa-solid|fa-regular|fa-brands|fa-/g, '').replace(/\s+/g, '-');
+    if (iconName.includes(term) || term === '') {
+      item.style.display = 'flex';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+// Close icon picker when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+  const iconPickerModal = document.getElementById('icon-picker-modal');
+  if (iconPickerModal) {
+    iconPickerModal.addEventListener('click', function(e) {
+      if (e.target === iconPickerModal) {
+        closeIconPicker();
+      }
+    });
+  }
+});
+
+function submitCertForm(event) {
+  event.preventDefault();
+  
+  const certId = document.getElementById('cert-id').value;
+  const title = document.getElementById('cert-title').value.trim();
+  const description = document.getElementById('cert-description').value.trim();
+  const level = document.getElementById('cert-level').value;
+  const icon = document.getElementById('cert-icon').value.trim() || 'fa-solid fa-certificate';
+  
+  // Clear previous errors
+  document.querySelectorAll('.error-message').forEach(el => {
+    el.classList.remove('show');
+    el.textContent = '';
+  });
+  
+  // Validation
+  let hasErrors = false;
+  if (!title) {
+    showError('title-error', 'Title is required');
+    hasErrors = true;
+  }
+  if (!level) {
+    showError('level-error', 'Level is required');
+    hasErrors = true;
+  }
+  
+  if (hasErrors) return;
+  
+  // Prepare data
+  const data = {
+    title: title,
+    description: description,
+    level: parseInt(level),
+    icon: icon
+  };
+  
+  const url = certId 
+    ? UPDATE_CERT_URL.replace('999', certId)
+    : CREATE_CERT_URL;
+  
+  const submitBtn = document.getElementById('submit-cert-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = certId ? 'Updating...' : 'Creating...';
+  
+  // Get CSRF token
+  const csrfToken = getCsrfToken();
+  
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrfToken
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.error) {
+      showError('title-error', data.error);
+      submitBtn.disabled = false;
+      submitBtn.textContent = certId ? 'Update' : 'Create';
+      showAlert(data.error, 'Error', 'error');
+    } else {
+      closeCertModal();
+      // Clear search to show newly created/updated cert
+      document.getElementById('cert-search-input').value = '';
+      showAlert(
+        certId ? 'Certification updated successfully!' : 'Certification created successfully!',
+        'Success',
+        'success'
+      ).then(() => {
+        location.reload();
+      });
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showError('title-error', 'An error occurred. Please try again.');
+    submitBtn.disabled = false;
+    submitBtn.textContent = certId ? 'Update' : 'Create';
+    showAlert('An error occurred. Please try again.', 'Error', 'error');
+  });
+}
+
+function showError(elementId, message) {
+  const errorEl = document.getElementById(elementId);
+  if (errorEl) {
+    errorEl.textContent = message;
+    errorEl.classList.add('show');
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function escapeJs(text) {
+  return text.replace(/\\/g, '\\\\')
+             .replace(/'/g, "\\'")
+             .replace(/"/g, '\\"')
+             .replace(/\n/g, '\\n')
+             .replace(/\r/g, '\\r');
+}
+
+// Load initial data on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Initial search will happen on page load via the form values already set
+});
+</script>
+
+{% endblock %}

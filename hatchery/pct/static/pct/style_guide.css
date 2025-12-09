@@ -1,0 +1,607 @@
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+.site-body {
+    background-color: black;
+    color: black;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.site-main {
+    flex: 1;
+}
+
+.site-header {
+    background-color: black;
+    font-size: 48px;
+    font-weight: 800;
+    color: white;
+    text-align: center;
+    margin: 0;
+    padding: 40px 0;
+}
+
+.site-header > * {
+    margin: 0;
+}
+
+/* For login page specifically, adjust header spacing */
+body.login-page .site-header {
+    padding: 60px 0 20px 0;
+}
+
+.site-footer {
+    background-color: #171A21;
+    color: white;
+    padding: 30px 0;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.footer_objects {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0 25px;
+    position: relative;
+}
+
+.footer_image {
+    flex-shrink: 0;
+}
+
+.footer_objects img {
+    width: 50px;
+    height: 50px;
+}
+
+.footer_objects a {
+    color: white;
+    text-decoration: none;
+}
+
+.footer_objects a:hover {
+    color: #5B8CFF;
+}
+
+.footer_links {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 40px;
+}
+
+.footer_spacer {
+    flex: 1;
+}
+
+nav {
+    background-color: #171A21;
+    color: white;
+    padding: 20px 0;
+}
+
+nav h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+}
+
+.nav_objects {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 25px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+nav h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+}
+
+.nav_links {
+    display: flex;
+    flex: 1 1 0;
+    justify-content: flex-end;
+    gap: 18px;
+    row-gap: 10px;
+    flex-wrap: wrap;
+}
+
+.nav_links a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    transition: color 0.3s;
+}
+
+.nav_links a:hover {
+    color: #5B8CFF;
+}
+
+.login-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.login-main .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 10px;
+}
+
+.login {
+    background-color: #171A21;
+    border-radius: 10px;
+    padding: 40px;
+}
+
+.login h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: white;
+    font-size: 32px;
+}
+
+.login_options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    color: black;
+    font-weight: 750;
+    font-size: 18px;
+}
+
+.user,
+.team-member,
+.staff,
+.admin {
+    background-color: #9AA4B2;
+    border-radius: 8px;
+    padding: 15px 20px;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+    color: white;
+    display: block;
+    width: 100%;
+    border: none;
+    font-weight: 600;
+    font-size: 16px;
+    transition: background-color 0.2s ease;
+    margin-bottom: 12px;
+}
+
+.team-member {
+    background-color: #9AA4B2;
+}
+
+.staff {
+    background-color: #C4C4C4;
+}
+
+.admin {
+    background-color: white;
+    color: black;
+}
+
+.user a,
+.team-member a,
+.staff a,
+.admin a {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+    width: 100%;
+    font-weight: inherit;
+}
+
+.user:hover,
+.team-member:hover,
+.staff:hover {
+    background-color: #718eb3;
+}
+
+.admin:hover {
+    background-color: #f0f0f0;
+}
+
+.register {
+    background-color: #5B8CFF;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 15px 20px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.register:hover {
+    background-color: #80a5fa;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 25px 0;
+    color: white;
+    padding: 4px;
+    font-size: 14px;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid white;
+}
+
+.home-page .site-header {
+    font-size: 42px;
+    margin-top: 50px;
+    margin-bottom: 30px;
+}
+
+.home-main .container {
+    color: white;
+    padding: 100px 20px;
+    text-align: center;
+}
+
+.home-cards {
+    width: min(1100px, 90vw);
+    margin: 0 auto 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    color: white;
+}
+
+.reservation-group {
+    background: #171A21;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.reservation-group__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.reservation-group__header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.reservation-group__see-all {
+    color: #9CA3AF;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.reservation-group__cards {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.reservation-card {
+    flex: 1 1 220px;
+    background: #F8FAFC;
+    color: #111827;
+    border-radius: 18px;
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.reservation-card--upcoming {
+    border: 2px solid #4C6EF5;
+}
+
+.reservation-card__date {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0;
+}
+
+.reservation-card__title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.reservation-card__time {
+    font-size: 15px;
+    color: #4B5563;
+    margin: 0;
+}
+
+.reservation-card__meta {
+    font-size: 14px;
+    color: #6B7280;
+    margin: 0;
+}
+
+.reservation-card__actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 0.75rem;
+}
+
+.reservation-card__btn {
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.reservation-card__btn--primary {
+    background: #4C6EF5;
+    color: white;
+}
+
+.reservation-card__btn--secondary {
+    background: #E5E7EB;
+    color: #111827;
+}
+
+.reservation-empty {
+    flex: 1 1 100%;
+    text-align: center;
+    color: #9CA3AF;
+    border: 1px dashed rgba(148, 163, 184, 0.4);
+    border-radius: 16px;
+    padding: 28px 16px;
+}
+
+.nav_objects h1 a{
+    text-decoration: none;
+    color: white;
+    
+}
+
+.reservation-card__cancel {
+    background: #d32f2f;
+    color: #fff;
+    border: none;
+    padding: 0.35rem 0.9rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.reservation-card__cancel:hover {
+    background: #b71c1c;
+}
+
+.room-reservation-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.room-reservation-card {
+    background: #15161c;
+    border: 1px solid #23252e;
+    border-radius: 12px;
+    padding: 1rem;
+    color: #eef1ff;
+}
+
+.room-reservation-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge--pending {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+}
+
+.status-badge--approved {
+    background: rgba(102, 187, 106, 0.15);
+    color: #66bb6a;
+}
+
+.status-badge--denied {
+    background: rgba(244, 67, 54, 0.15);
+    color: #f44336;
+}
+
+.btn-approve,
+.btn-deny {
+    width: 100%;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-approve {
+    background: #4caf50;
+    color: #111;
+}
+
+.btn-approve:hover {
+    background: #449d48;
+}
+
+.btn-deny {
+    background: #ef5350;
+    color: #fff;
+}
+
+.btn-deny:hover {
+    background: #e53935;
+}
+
+.calendar-panel {
+    margin-top: 2rem;
+}
+
+.home-calendar {
+    background: #15161c;
+    border: 1px solid #23252e;
+    border-radius: 12px;
+    padding: 0.5rem;
+}
+
+.site-body.calendar-page {
+    color: white;
+}
+
+.calendar-page #calendar {
+    max-width: 90%;
+    margin: 20px auto 40px;
+    height: 700px;
+    color: white;
+}
+
+.calendar-page .calendar-controls {
+    width: 90%;
+    margin: 20px auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: white;
+}
+
+.calendar-page .calendar-legend {
+    display: flex;
+    gap: 1.5rem;
+    color: white;
+    flex-wrap: wrap;
+}
+
+.calendar-page .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.calendar-page .legend-dot {
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.calendar-page .legend-dot--workblock {
+    background-color: #3788d8;
+}
+
+.calendar-page .legend-dot--training-open {
+    background-color: #f39c12;
+}
+
+.calendar-page .legend-dot--training-booked {
+    background-color: #16a085;
+}
+
+.calendar-page .training-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.calendar-page .training-toggle input {
+    accent-color: #5c73ff;
+}
+
+.calendar-page .fc-toolbar-title,
+.calendar-page .fc-button,
+.calendar-page .fc-col-header-cell-cushion,
+.calendar-page .fc-daygrid-day-number,
+.calendar-page .fc-timegrid-slot-label-cushion {
+    color: white !important;
+}
+
+.calendar-page .fc td,
+.calendar-page .fc th {
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.calendar-page .fc-event-title {
+    color: white !important;
+}
+
+/* Ensure calendar list view text remains legible */
+.calendar-page .fc-list-table .fc-list-day-cushion,
+.calendar-page .fc-list-table .fc-list-day-text,
+.calendar-page .fc-list-table .fc-list-day-side-text {
+    color: #0f111a;
+}
+
+.calendar-page .fc-list-table .fc-list-event,
+.calendar-page .fc-list-table .fc-list-event-title,
+.calendar-page .fc-list-table .fc-list-event-time {
+    color: #151724;
+}
+
+.calendar-page .fc-list-table .fc-list-event:hover {
+    background-color: rgba(92, 115, 255, 0.12);
+}
+
+.home-calendar .fc-list-table,
+.home-calendar .fc-list-day > td,
+.home-calendar .fc-list-event > td {
+    background-color: #161925;
+}
+
+.home-calendar .fc-list-table .fc-list-day-cushion,
+.home-calendar .fc-list-table .fc-list-day-text,
+.home-calendar .fc-list-table .fc-list-day-side-text {
+    color: #f0f2ff;
+    background-color: #1b1e2b;
+}
+
+.home-calendar .fc-list-table .fc-list-event,
+.home-calendar .fc-list-table .fc-list-event-title,
+.home-calendar .fc-list-table .fc-list-event-time {
+    color: #e2e8ff;
+}
+
+.home-calendar .fc-list-table .fc-list-event:hover td,
+.home-calendar .fc-list-table .fc-list-event:hover {
+    background-color: rgba(120, 126, 149, 0.4);
+    color: #f5f7ff;
+}

@@ -1,0 +1,105 @@
+{% extends "pct/base_profile.html" %}
+{% block content %}
+<div class="my-trainings-page">
+  <div class="my-trainings-header">
+    <div>
+      <p class="page-kicker">Staff dashboard</p>
+      <h1>My Trainings</h1>
+      <p>Keep tabs on upcoming sessions and see which students are already assigned.</p>
+    </div>
+    <a class="btn-primary" href="{% url 'training-create' %}">+ Create Training</a>
+  </div>
+
+  <section class="my-trainings-section">
+    <header class="section-header">
+      <h2>Sessions I'm Leading</h2>
+      <p>These are the trainings where you're listed as the instructor.</p>
+    </header>
+
+    {% if my_trainings %}
+      <div class="my-trainings-grid">
+        {% for training in my_trainings %}
+          <article class="training-card training-card--staff">
+            <header class="training-card__header">
+              <span class="training-card__machine">{{ training.machine }}</span>
+              <span class="training-card__level">{{ training.level }}</span>
+            </header>
+            <h2 class="training-card__title">{{ training.name }}</h2>
+            <p class="training-card__time">
+              {% if training.time %}
+                {{ training.time|date:"M j, Y" }} · {{ training.time|date:"g:i A" }}
+              {% else %}
+                Time TBD
+              {% endif %}
+            </p>
+            <div class="training-card__meta">
+              <div>
+                <span class="meta-label">Student</span>
+                {% if training.student %}
+                  <span class="meta-value">{{ training.student.get_full_name }}</span>
+                {% else %}
+                  <span class="meta-value meta-value--muted">Open slot</span>
+                {% endif %}
+              </div>
+              <div>
+                <span class="meta-label">Status</span>
+                {% if training.time and training.time < now %}
+                  <span class="status-chip status-chip--done">Completed</span>
+                {% else %}
+                  <span class="status-chip status-chip--upcoming">Upcoming</span>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <h3>No trainings yet</h3>
+        <p>Create your first session to let students reserve a seat.</p>
+        <a class="btn-primary" href="{% url 'training-create' %}">Create training</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="available-trainings-section">
+    <header class="section-header">
+      <h2>All Open Trainings</h2>
+      <p>Browse every session that still needs a student, even if someone else is leading it.</p>
+    </header>
+
+    {% if available_trainings %}
+      <div class="training-card-grid">
+        {% for training in available_trainings %}
+          <article class="training-card">
+            <div class="training-card__header">
+              <span class="training-card__machine">{{ training.machine }}</span>
+              <span class="training-card__level">{{ training.level }}</span>
+            </div>
+            <h3 class="training-card__title">{{ training.name }}</h3>
+            <p class="training-card__time">
+              {% if training.time %}
+                {{ training.time|date:"M j, Y" }} · {{ training.time|date:"g:i A" }}
+              {% else %}
+                Time TBD
+              {% endif %}
+            </p>
+            <p class="training-card__instructor">
+              Instructor:
+              {% if training.staff %}
+                {{ training.staff.get_full_name }}
+              {% else %}
+                Assigned soon
+              {% endif %}
+            </p>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="training-list-empty">
+        <p>No open trainings at the moment. Check back later.</p>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

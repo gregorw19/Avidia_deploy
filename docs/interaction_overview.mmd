@@ -1,0 +1,49 @@
+flowchart TD
+  subgraph Visitor
+    V1[Open site] --> V2[Login / choose role]
+  end
+
+  subgraph Auth
+    A1[Google/social login with role] --> A2[Django auth & Profile]
+  end
+
+  subgraph Common
+    C1[Home dashboard] --> C2[Calendar feed]
+    C1 --> C3[Reservations page]
+    C1 --> C4[Profile & certifications]
+  end
+
+  subgraph Student/TeamMember
+    S1[Training list] --> S2[Book training]
+    S2 --> S3[My trainings / cancel]
+    S1 --> S4[Calendar view of bookings]
+    T1[Schedule overview] --> T2[Add availability]
+    T1 --> T3[View published shifts]
+    T3 --> T4[Request swap]
+  end
+
+  subgraph Staff
+    ST1[Staff training list] --> ST2[Create/edit trainings]
+    ST2 --> ST3[Publish training slots]
+    SB1[Schedule builder] --> SB2[Create/edit shifts]
+    SB2 --> SB3[Publish weekly schedule]
+    SB3 --> SB4[Handle swap requests]
+    SM1[Manage users] --> SM2[Set roles/certs]
+    SS1[Semester settings] --> SS2[Open hours/holidays]
+  end
+
+  subgraph Admin
+    AD1[Reports] --> AD2[Review system metrics]
+  end
+
+  V2 --> A1
+  A2 --> C1
+  C3 -->|Room request| StaffReview[Staff review/approve]
+  S2 --> C2
+  T2 --> SB1
+  SB3 --> T3
+  SB4 --> T3
+  ST3 --> S3
+  SM2 --> C4
+  SS2 --> SB1
+  AD2 -.-> StaffReview

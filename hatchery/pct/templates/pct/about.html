@@ -1,0 +1,173 @@
+{% extends "pct/base.html" %}
+
+
+{% block title %}About | The Hatchery{% endblock %}
+{% block body_class %} about-page{% endblock %}
+{% block main_class %} about-main{% endblock %}
+
+{% block nav %}
+    <div class="header-links" style="padding: 20px;">
+        {% if request.user.is_authenticated %}
+            <a href="{% url 'home' %}" style="color: white; font-size: 1.5rem; text-decoration: none;background-color:#1a1d23;border-radius: 20px;padding: 10px 20px;">← Back to Homepage</a>
+        {% else %}
+            <a href="{% url 'login' %}" style="color: white; font-size: 1.5rem; text-decoration: none;background-color:#1a1d23;border-radius: 20px;padding: 10px 20px;">← Back to Login</a>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block content %}
+
+<div class="about-container">
+    <h1 class="about-title">About The Hatchery</h1>
+
+    <div class="about-card">
+        <p class="about-text">
+            The Hatchery is committed to providing a space where all students, faculty,
+            and staff members of Boston College can feel welcome. Below are some of our
+            guiding principles, as well as some of our major milestones on this journey.
+        </p>
+
+        <h3 class="section-title">Mission Statement</h3>
+        <p class="about-text">
+            In the spirit of <em>Think to Make for Impact</em>, being able to iterate,
+            visualize, refine, and communicate creative design ideas using prototypes is an
+            essential skill set for our students entering the future workforce. The mission
+            of the Boston College (BC) Makerspaces (The Hatchery) is to enable these transformative
+            capabilities for everyone—regardless of background or discipline—by providing an
+            equitable, accessible, and well-equipped community-oriented space. Wherever you are
+            on your making and design journey, The Hatchery encourages all members of the community
+            to let their ideas fly.
+        </p>
+
+        <h3 class="section-title">On this site, you will be able to:</h3>
+        <ul class="about-list">
+            <li>Book time on different Hatchery equipment</li>
+            <li>Sign up for training sessions and get machine certifications</li>
+            <li>Manage your profile and view your certifications</li>
+            <li>Reserve the makerspace for events and projects</li>
+        </ul>
+    </div>
+
+    <div class="hours-card">
+        <h2 class="hours-title">Open Hours</h2>
+        <p class="hours-subtitle">
+            The Hatchery is open to the Boston College community during our regular open hours*, 
+            providing access to the space and equipment for all your making and prototyping needs.
+        </p>
+
+        <div class="hours-grid">
+            <div class="hours-row"><span>Monday</span><span>12:00pm – 10:00pm</span></div>
+            <div class="hours-row"><span>Tuesday</span><span>12:00pm – 10:00pm</span></div>
+            <div class="hours-row"><span>Wednesday</span><span>12:00pm – 10:00pm</span></div>
+            <div class="hours-row"><span>Thursday</span><span>12:00pm – 10:00pm</span></div>
+            <div class="hours-row"><span>Friday</span><span>12:00pm – 6:00pm</span></div>
+            <div class="hours-row"><span>Saturday</span><span>Closed</span></div>
+            <div class="hours-row"><span>Sunday</span><span>12:00pm – 8:00pm</span></div>
+        </div>
+    </div>
+
+</div>
+
+
+<style>
+    body {
+        background-color: #000000;
+        margin: 0;
+        color: #e0e0e0;
+    }
+
+    .about-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 40px;
+    }
+
+    .about-title {
+        font-size: 2.8rem;
+        font-weight: bold;
+        color: white;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .about-card,
+    .hours-card {
+        background-color: #1a1d23;
+        padding: 40px;
+        width: 85%;
+        max-width: 900px;
+        border-radius: 20px;
+        box-shadow: 0 0 25px rgba(0,0,0,0.35);
+        margin-top: 30px;
+    }
+
+    .section-title {
+        font-size: 1.4rem;
+        color: #dcdcdc;
+        margin-top: 30px;
+        margin-bottom: 10px;
+    }
+
+    .about-text {
+        color: #c9c9c9;
+        font-size: 1rem;
+        line-height: 1.7;
+        margin-bottom: 20px;
+    }
+
+    .about-list {
+        padding-left: 1.4rem;
+        margin-top: 10px;
+    }
+
+    .about-list li {
+        margin: 8px 0;
+        color: #d0d0d0;
+    }
+
+    /* Hours section */
+    .hours-title {
+        font-size: 1.6rem;
+        color: white;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .hours-subtitle {
+        color: #c7c7c7;
+        text-align: center;
+        margin-bottom: 30px;
+        line-height: 1.5;
+    }
+
+    .hours-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .hours-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 1.05rem;
+        padding: 12px 20px;
+        background: #23272f;
+        border-radius: 10px;
+        color: #e2e2e2;
+    }
+
+    .hours-row span:last-child {
+        font-weight: 600;
+    }
+</style>
+
+{% endblock %}
+
+
+
+
+
+
