@@ -174,7 +174,26 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://mysite-r0j9.onrender.com'
-    'https://mysite-7bsa.onrender.com'
-]
+# Honor HTTPS headers from the platform proxy
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# CSRF: include Render defaults, the Railway domain, and any extra env-provided origins
+_default_csrf_origins = {
+    "https://mysite-r0j9.onrender.com",
+    "https://mysite-7bsa.onrender.com",
+}
+
+railway_host = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+if railway_host:
+    _default_csrf_origins.add(f"https://{railway_host}")
+
+extra_origins = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+_default_csrf_origins.update(
+    origin.strip() for origin in extra_origins.split(",") if origin.strip()
+)
+
+CSRF_TRUSTED_ORIGINS = sorted(_default_csrf_origins)
+
+# Always use secure cookies in production (DEBUG=False)
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
